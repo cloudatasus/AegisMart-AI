@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>🛒 AegisMart AI - 賣場即時動態定價大腦</title>
     <style>
         :root{--bg-main:#020617;--bg-card:#0f172a;--bg-side:#0b0f19;--accent:#3b82f6;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--text-main:#f8fafc;--text-muted:#64748b;--border:#1e293b;}
@@ -28,6 +29,26 @@
         .tech-point:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.3);border-color:#334155;}
         .tech-point h5{margin:0 0 0.4rem 0;color:#818cf8;font-size:0.95rem;}
         .tech-point p{margin:0;color:#94a3b8;font-size:0.9rem;line-height:1.5;}
+    @media(max-width:768px){
+        [style*="grid-template-columns"]{grid-template-columns:1fr!important;}
+        [style*="display:grid"]{grid-template-columns:1fr!important;}
+        body{overflow:auto;height:auto;}
+        .top-nav{flex-direction:column;padding:0.8rem 1rem;}
+        .brand-zone{margin-right:0;}
+        .slide-nav-list{flex-wrap:wrap;justify-content:center;}
+        .nav-item{padding:0.4rem 0.7rem;font-size:0.72rem;}
+        .main-content{overflow:visible;}
+        .top-bar{height:auto;padding:0.8rem 1rem;flex-direction:column;gap:0.3rem;align-items:flex-start;}
+        .viewport{padding:1.2rem;}
+        .slide-view h2{font-size:1.3rem;}
+        .slide-view .subtitle{font-size:0.95rem;}
+        .tech-points{grid-template-columns:1fr;}
+    }
+    @media(max-width:480px){
+        .viewport{padding:0.8rem;}
+        .slide-view h2{font-size:1.1rem;}
+        .nav-item{padding:0.3rem 0.5rem;font-size:0.68rem;}
+    }
     </style>
 </head>
 <body>

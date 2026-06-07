@@ -2,6 +2,7 @@
 <html lang="zh-TW">
 <head>
 <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>🛒 AegisMart AI — PoC 控制台</title>
 <style>
 :root{--bg:#020617;--card:#0f172a;--border:#1e293b;--accent:#3b82f6;--success:#10b981;--danger:#ef4444;--warn:#f59e0b;--text:#f8fafc;--muted:#64748b;}
@@ -35,6 +36,19 @@ h1{font-size:1.6rem;font-weight:800;margin:0 0 0.3rem 0;}
 .plan:hover{transform:translateX(3px);}
 @keyframes planIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
 .plan button{transition:all 0.2s;}.plan button:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+@media(max-width:768px){
+body{padding:1rem;}
+h1{font-size:1.2rem;}
+.status-row{grid-template-columns:1fr 1fr;}
+.sbox span{font-size:1rem;}
+.log{height:140px;font-size:0.7rem;}
+.evt-bar{gap:0.3rem;}
+.evt-tag{font-size:0.68rem;padding:0.3rem 0.5rem;}
+}
+@media(max-width:480px){
+.status-row{grid-template-columns:1fr;}
+body{padding:0.6rem;}
+}
 </style>
 </head>
 <body>
