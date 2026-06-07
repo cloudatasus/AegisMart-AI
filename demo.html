@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<title>🛒 AegisMart AI — PoC 控制台</title>
+<style>
+:root{--bg:#020617;--card:#0f172a;--border:#1e293b;--accent:#3b82f6;--success:#10b981;--danger:#ef4444;--warn:#f59e0b;--text:#f8fafc;--muted:#64748b;}
+*{box-sizing:border-box;}
+body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg);color:var(--text);margin:0;padding:2rem;min-height:100vh;}
+h1{font-size:1.6rem;font-weight:800;margin:0 0 0.3rem 0;}
+.sub{color:#94a3b8;font-size:0.9rem;margin-bottom:1.5rem;}
+.back{color:var(--accent);text-decoration:none;font-size:0.8rem;font-weight:600;display:inline-block;margin-bottom:1rem;}
+.back:hover{text-decoration:underline;}
+.evt-bar{display:flex;gap:0.5rem;margin-bottom:1.2rem;flex-wrap:wrap;}
+.evt-tag{font-size:0.75rem;padding:0.4rem 0.8rem;border-radius:6px;background:#1e293b;color:#64748b;border:1px solid #334155;font-weight:600;transition:all 0.3s;cursor:default;}
+.evt-tag:hover{transform:translateY(-2px);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+.evt-tag.active{background:#0f2920;color:#6ee7b7;border-color:#065f46;animation:pulse 1.5s infinite;}
+.evt-tag.done{background:#334155;color:#94a3b8;border-color:#475569;text-decoration:line-through;opacity:0.6;}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(16,185,129,0.4);}50%{box-shadow:0 0 12px 4px rgba(16,185,129,0.15);}}
+.panel{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:1.5rem;}
+.status-row{display:grid;grid-template-columns:repeat(4,1fr);gap:1rem;margin-bottom:1rem;}
+.sbox{background:var(--bg);padding:1rem;border-radius:10px;border:1px solid var(--border);border-left:4px solid #475569;transition:all 0.3s;}
+.sbox:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.4);}
+.sbox.alert{border-left-color:var(--danger);animation:blink 1.5s infinite;}
+.sbox.warn{border-left-color:var(--warn);}
+@keyframes blink{0%,100%{opacity:1;}50%{opacity:0.6;}}
+.sbox small{color:var(--muted);font-size:0.72rem;font-weight:600;}
+.sbox span{display:block;font-size:1.1rem;font-weight:800;margin-top:0.2rem;}
+.log{background:#010205;padding:1rem;border-radius:10px;font-family:monospace;font-size:0.78rem;color:#38bdf8;height:180px;overflow-y:auto;border:1px solid var(--border);scroll-behavior:smooth;margin-bottom:1rem;}
+.actions{display:none;animation:up 0.5s ease forwards;}
+#insight{display:none;margin-top:1rem;background:linear-gradient(135deg,#1a0f33,#0f172a);border:1px solid #6d28d9;border-radius:12px;padding:1.5rem;animation:up 0.6s ease forwards;}
+@keyframes up{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+.plan{background:#0f172a;border:1px solid #334155;border-radius:10px;padding:1rem;margin:0.7rem 0;opacity:0;animation:planIn 0.4s ease forwards;transition:all 0.2s;}
+.plan:nth-child(1){animation-delay:0s;}.plan:nth-child(2){animation-delay:0.15s;}.plan:nth-child(3){animation-delay:0.3s;}
+.plan:hover{transform:translateX(3px);}
+@keyframes planIn{from{opacity:0;transform:translateX(-10px);}to{opacity:1;transform:translateX(0);}}
+.plan button{transition:all 0.2s;}.plan button:hover{transform:scale(1.05);box-shadow:0 4px 12px rgba(0,0,0,0.3);}
+</style>
+</head>
+<body>
+<a href="index.html" class="back">← 返回簡報</a>
+<h1>🛒 AegisMart AI — 店長實時審批控制台</h1>
+<p class="sub">Edge AI 持續監控各區人流與貨架互動，異常觸發後 Multi-Agent 推演促銷方案，店長審批後看板即時更新。</p>
+
+<div class="evt-bar" id="timeline"></div>
+
+<div class="panel">
+    <div class="status-row">
+        <div class="sbox" id="box-flow"><small>[Edge AI] 生鮮區人流</small><span id="txt-flow">32 人/hr</span></div>
+        <div class="sbox" id="box-exp"><small>[POS] 即期品庫存</small><span id="txt-exp">正常</span></div>
+        <div class="sbox" id="box-shelf"><small>[Edge AI] 貨架互動</small><span id="txt-shelf">正常</span></div>
+        <div class="sbox" id="box-mem"><small>[RAG] 策略記憶庫</small><span id="txt-mem">已就緒</span></div>
+    </div>
+    <div class="log" id="log">[System] AegisMart AI 已啟動，賣場視覺監控中...</div>
+    <div class="actions" id="acts"><h4 id="act-title" style="margin:0 0 0.5rem 0;color:white;"></h4><div id="plans"></div></div>
+    <div id="insight"><div style="display:flex;align-items:center;gap:0.6rem;margin-bottom:0.8rem;"><span style="font-size:1.3rem;">📊</span><div><div style="color:#c4b5fd;font-weight:700;font-size:0.9rem;">營收反思 Agent — 每日打烊回顧</div><div style="color:#64748b;font-size:0.72rem;">今日 6 次促銷回顧 → Reflection → 最佳實踐提煉</div></div></div><div id="insight-content"></div></div>
+</div>
+
+<script>
+const log=document.getElementById('log'),txtFlow=document.getElementById('txt-flow'),txtExp=document.getElementById('txt-exp'),txtShelf=document.getElementById('txt-shelf'),txtMem=document.getElementById('txt-mem'),boxFlow=document.getElementById('box-flow'),boxExp=document.getElementById('box-exp'),boxShelf=document.getElementById('box-shelf'),acts=document.getElementById('acts'),actTitle=document.getElementById('act-title'),plans=document.getElementById('plans');
+let interval=null,idx=0,triggered=false,evtIdx=0;
+
+const mLogs=["[Edge AI] 生鮮區 32 人/hr，走道暢通","[POS] 即期品 18 項，到期 >6hr，正常","[Edge AI] 零食區停留 avg 8s，拿取率 22%","[Edge AI] 飲料區人流 45 人/hr，熱區","[POS] 今日營收 $184,200，符合預期","[RAG] 策略記憶庫 OK，31 筆歷史","[Edge AI] 冷凍區人流 12 人/hr（低）","[Edge AI] 生鮮區貨架互動正常，放回率 15%","[POS] 烘焙區今日出爐 3 批次","[Edge AI] 全場總人流 180 人/hr"];
+
+const events=[
+{tag:"🌙 晚間即期品",trigger:"🌙 [Edge AI] 生鮮區人流驟降 68%（32→10 人/hr）+ [POS] 即期品剩餘 42%，到期 <3hr！",escalate:"[視覺感知 Agent] 黃金促銷窗口觸發！<br>[定價策略 Agent] 推演 3 套促銷方案：",flow:"🔻 10 人/hr",exp:"⚠️ 42% 剩餘",shelf:"正常",mem:"🔍 5 筆晚間",title:"🌙 即期品限時促銷",plans:[{n:"方案 A：6 折限時看板",d:"生鮮區看板「今晚限定 6 折」+ 鄰近走道導引文案<br><em>預估消化率 85%，報廢率降至 6%</em>",r:"推薦",c:"#10b981"},{n:"方案 B：買一送一",d:"指定即期品買一送一，看板倒數計時<br><em>消化率 92%，毛利較低但報廢歸零</em>",r:"激進",c:"#f59e0b"},{n:"方案 C：組合驚喜包",d:"$99 隨機 3 樣即期品福袋<br><em>趣味性高，社群分享率 +40%</em>",r:"創新",c:"#3b82f6"}]},
+{tag:"👻 冷門走道",trigger:"👻 [Edge AI] 調味料走道連續 45 分鐘人流 = 0！滯銷品 12 項",escalate:"[視覺感知 Agent] 死角區警報<br>[定價策略 Agent] 人流導引方案：",flow:"32 人/hr",exp:"正常",shelf:"⚠️ 調味料 0人",mem:"🔍 2 筆導引",title:"👻 冷門區人流導引",plans:[{n:"方案 A：鄰近看板導引",d:"熱區看板跳「→ 隔壁走道 醬油買一送一」<br><em>導引率 25%，走道人流 +300%</em>",r:"推薦",c:"#10b981"},{n:"方案 B：限時閃購",d:"調味料區看板「15 分鐘內 5 折」製造急迫感<br><em>清掉 60% 滯銷，衝動購買率高</em>",r:"中風險",c:"#f59e0b"},{n:"方案 C：食譜連動",d:"看板播食譜影片「今晚做這道」→ 帶出調味料<br><em>客單價 +$120，連帶購買率 35%</em>",r:"創新",c:"#3b82f6"}]},
+{tag:"🤔 拿了又放",trigger:"🤔 [Edge AI] 零食區「拿起又放回率」飆升至 72%！停留 avg 15s → 購買率僅 8%",escalate:"[視覺感知 Agent] 價格門檻過高偵測<br>[定價策略 Agent] 降低決策門檻：",flow:"28 人/hr",exp:"正常",shelf:"⚠️ 放回率72%",mem:"🔍 3 筆猶豫",title:"🤔 購買猶豫破解",plans:[{n:"方案 A：買二送一",d:"看板「零食區任選 3 付 2」降低單品決策壓力<br><em>轉化率 8%→28%，客單價 +$85</em>",r:"推薦",c:"#10b981"},{n:"方案 B：小包裝試吃價",d:"看板推「迷你體驗包 $29」降低嘗試門檻<br><em>新客轉化 +45%，回購率 60%</em>",r:"低風險",c:"#3b82f6"},{n:"方案 C：限量倒數",d:"看板「剩餘 XX 組」製造稀缺感<br><em>衝動購買率 +55%</em>",r:"心理策略",c:"#f59e0b"}]},
+{tag:"🔥 午餐尖峰",trigger:"🔥 [Edge AI] 熟食區人流暴增 280%（120 人/hr）！排隊 >15 人",escalate:"[視覺感知 Agent] 尖峰壅塞偵測<br>[定價策略 Agent] 分流 + 溢價策略：",flow:"🔺 120 人/hr",exp:"熟食快售罄",shelf:"熟食區壅塞",mem:"🔍 4 筆午餐",title:"🔥 午餐尖峰策略",plans:[{n:"方案 A：冷門區導引",d:"看板「沙拉吧免排隊 85 折」引導至隔壁<br><em>分流 30%，整體滿意度提升</em>",r:"推薦",c:"#10b981"},{n:"方案 B：預購快取",d:"看板推 QR code 預購，30 分鐘後取餐免排<br><em>排隊 -50%，延伸至下午時段營收</em>",r:"創新",c:"#3b82f6"},{n:"方案 C：尖峰微漲",d:"熱門便當 +$10，附加飲料 → 隱性漲價<br><em>毛利 +15%，顧客感受加值非漲價</em>",r:"進階",c:"#f59e0b"}]},
+{tag:"🥐 烘焙即期",trigger:"🥐 [POS] 烘焙區下午出爐品剩餘 65%，距打烊 2hr！人流僅 8 人/hr",escalate:"[視覺感知 Agent] 烘焙報廢風險<br>[定價策略 Agent] 清倉方案：",flow:"8 人/hr",exp:"⚠️ 烘焙65%剩",shelf:"正常",mem:"🔍 6 筆烘焙",title:"🥐 烘焙區清倉",plans:[{n:"方案 A：階梯折扣",d:"立即 7 折 → 1hr 後 5 折 → 打烊前 3 折<br><em>歷史消化率 90%，報廢率 <5%</em>",r:"推薦",c:"#10b981"},{n:"方案 B：麵包福袋",d:"看板「$79 隨機 5 入福袋」一次清<br><em>趣味性 + 社群打卡率高</em>",r:"創新",c:"#3b82f6"},{n:"方案 C：隔日預購折扣",d:"「明日麵包預購 8 折」+ 明早新鮮直取<br><em>零報廢 + 鎖定明日來店</em>",r:"長期",c:"#f59e0b"}]},
+{tag:"📊 全場低迷",trigger:"📊 [Edge AI] 全場人流較昨日同期 -45%！各區均低於閾值",escalate:"[視覺感知 Agent] 全場低迷警報<br>[定價策略 Agent] 全場活化方案：",flow:"🔻 全場 -45%",exp:"正常",shelf:"全場偏低",mem:"🔍 2 筆低迷",title:"📊 全場人流活化",plans:[{n:"方案 A：限時全場 88 折",d:"所有看板同步「未來 1 小時全場 88 折」<br><em>歷史證明吸引路過客入場 +60%</em>",r:"推薦",c:"#10b981"},{n:"方案 B：闖關集章",d:"看板推「逛滿 3 區集章送飲料」遊戲化<br><em>平均停留 +25min，各區均衡分布</em>",r:"創新",c:"#3b82f6"},{n:"方案 C：驚喜時段",d:"每 30 分鐘隨機一區閃購 5 折（看板倒數）<br><em>製造期待感，社群分享 +80%</em>",r:"實驗性",c:"#f59e0b"}]}
+];
+
+const timeline=document.getElementById('timeline');
+events.forEach((e,i)=>{const d=document.createElement('div');d.className='evt-tag';d.id='tag-'+i;d.textContent=e.tag;timeline.appendChild(d);});
+
+function start(){
+    stop();triggered=false;acts.style.display="none";
+    boxFlow.classList.remove('alert','warn');boxExp.classList.remove('alert','warn');boxShelf.classList.remove('alert','warn');
+    txtFlow.innerText="32 人/hr";txtExp.innerText="正常";txtShelf.innerText="正常";txtMem.innerText="已就緒";
+    log.innerHTML="[System] AegisMart AI 賣場視覺監控中...";idx=0;
+    interval=setInterval(()=>{
+        if(triggered)return;
+        const t=`<span style="color:#475569">[${new Date().toLocaleTimeString('zh-TW',{hour12:false})}]</span>`;
+        log.innerHTML+=`<br>${t} ${mLogs[idx%mLogs.length]}`;idx++;log.scrollTop=log.scrollHeight;
+        if(idx>=5&&!triggered)fire();
+    },2500);
+}
+
+function fire(){
+    if(evtIdx>=events.length){setTimeout(showInsight,2000);return;}
+    triggered=true;const e=events[evtIdx];
+    document.getElementById('tag-'+evtIdx).classList.add('active');
+    setTimeout(()=>{
+        log.innerHTML+=`<br><br><span style="color:#ef4444;font-weight:700">${e.trigger}</span>`;log.scrollTop=log.scrollHeight;
+        if(e.flow.includes('🔻')||e.flow.includes('🔺'))boxFlow.classList.add('alert');
+        if(e.exp.includes('⚠️'))boxExp.classList.add('warn');
+        if(e.shelf.includes('⚠️'))boxShelf.classList.add('warn');
+        txtFlow.innerText=e.flow;txtExp.innerText=e.exp;txtShelf.innerText=e.shelf;txtMem.innerText=e.mem;
+    },1000);
+    setTimeout(()=>{log.innerHTML+=`<br><span style="color:#38bdf8">${e.escalate}</span>`;log.scrollTop=log.scrollHeight;},3500);
+    setTimeout(()=>{
+        acts.style.display="block";actTitle.innerText=e.title;
+        plans.innerHTML=e.plans.map(p=>`<div class="plan" style="border-left:4px solid ${p.c};"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:0.3rem;"><strong style="color:white;font-size:0.88rem;">${p.n}</strong><span style="font-size:0.68rem;padding:0.2rem 0.5rem;border-radius:4px;background:${p.c}22;color:${p.c};font-weight:600;">${p.r}</span></div><p style="margin:0;color:#cbd5e1;font-size:0.82rem;line-height:1.5;">${p.d}</p><button onclick="approve(this,'${p.n.replace(/'/g,"\\'")}')" style="margin-top:0.5rem;background:${p.c};color:white;border:none;padding:0.4rem 0.8rem;border-radius:6px;cursor:pointer;font-weight:600;font-size:0.76rem;">店長核准 ✓</button></div>`).join('');
+    },5500);
+}
+
+function approve(btn,name){
+    plans.querySelectorAll('button').forEach(b=>{b.disabled=true;b.style.opacity='0.3';});
+    btn.style.opacity='1';btn.innerText='⏳ 更新中...';
+    log.innerHTML+=`<br><span style="color:#10b981;font-weight:700">[Human-in-the-Loop] ✓ 店長核准「${name}」</span>`;log.scrollTop=log.scrollHeight;
+    setTimeout(()=>{log.innerHTML+=`<br>[MCP 3] 📺 電子看板內容已更新`;log.scrollTop=log.scrollHeight;},800);
+    setTimeout(()=>{log.innerHTML+=`<br>[MCP 3] 🏷️ POS 折扣碼同步完成`;log.scrollTop=log.scrollHeight;},1500);
+    setTimeout(()=>{log.innerHTML+=`<br>[RAG] 💾 寫入策略記憶庫`;txtMem.innerText="✓ +1 筆";log.scrollTop=log.scrollHeight;},2200);
+    setTimeout(()=>{
+        log.innerHTML+=`<br><span style="color:#10b981">[System] 🚀 促銷方案已上線！</span>`;btn.innerText='✅ 已上線';log.scrollTop=log.scrollHeight;
+        document.getElementById('tag-'+evtIdx).classList.replace('active','done');
+        evtIdx++;
+        if(evtIdx>=events.length)setTimeout(showInsight,3000);
+        else setTimeout(start,6000);
+    },3000);
+}
+
+function showInsight(){
+    stop();acts.style.display="none";
+    log.innerHTML+=`<br><br><span style="color:#c4b5fd;font-weight:700">[營收反思 Agent] 今日打烊，6 次促銷回顧 Reflection 啟動...</span>`;
+    log.innerHTML+=`<br><span style="color:#c4b5fd">[RAG] 歷史策略比對完成，最佳實踐提煉 ↓</span>`;
+    log.scrollTop=log.scrollHeight;txtMem.innerText="反思 6 筆";
+    const h=document.getElementById('insight');h.style.display="block";
+    const hp=document.getElementById('insight-content');
+    const insights=[
+        {n:"💡 即期品最佳啟動時間：到期前 2.5hr",d:"太早啟動折扣吃掉正常毛利，太晚來不及消化。2.5hr 為消化率/毛利最佳平衡點（實測 31 次平均）",c:"#10b981"},
+        {n:"💡 放回率 >60% 即應觸發降價",d:"觀察 87 次貨架互動事件，放回率突破 60% 後購買轉化率跳水式下降，此為最佳介入點",c:"#3b82f6"},
+        {n:"💡 導引看板文案「食譜型」>「折扣型」",d:"冷門區導引實驗中，附食譜的看板點擊後購買率比純折扣高 2.1 倍，且客單價多 $85",c:"#818cf8"}
+    ];
+    hp.innerHTML=insights.map(p=>`<div class="plan" style="border-left:4px solid ${p.c};"><strong style="color:white;font-size:0.85rem;">${p.n}</strong><p style="margin:0.3rem 0 0 0;color:#cbd5e1;font-size:0.8rem;line-height:1.5;">${p.d}</p></div>`).join('');
+}
+
+function stop(){if(interval){clearInterval(interval);interval=null;}}
+start();
+</script>
+</body>
+</html>

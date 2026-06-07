@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <title>🛒 AegisMart AI - 賣場即時動態定價大腦</title>
+    <style>
+        :root{--bg-main:#020617;--bg-card:#0f172a;--bg-side:#0b0f19;--accent:#3b82f6;--success:#10b981;--danger:#ef4444;--warning:#f59e0b;--text-main:#f8fafc;--text-muted:#64748b;--border:#1e293b;}
+        body{font-family:-apple-system,system-ui,sans-serif;background:var(--bg-main);color:var(--text-main);margin:0;padding:0;display:flex;flex-direction:column;height:100vh;overflow:hidden;}
+        .top-nav{background:var(--bg-side);border-bottom:1px solid var(--border);display:flex;align-items:center;padding:0.8rem 2rem;gap:1rem;flex-shrink:0;overflow-x:auto;}
+        .brand-zone{display:flex;align-items:center;gap:0.6rem;margin-right:1.5rem;white-space:nowrap;}
+        .brand-zone h1{margin:0;font-size:1.2rem;font-weight:800;color:white;}
+        .slide-nav-list{display:flex;gap:0.5rem;align-items:center;}
+        .nav-item{background:transparent;color:var(--text-muted);border:1px solid transparent;padding:0.5rem 1rem;border-radius:8px;cursor:pointer;text-align:center;font-weight:600;font-size:0.8rem;transition:all 0.2s ease;white-space:nowrap;}
+        .nav-item:hover{background:#131b2e;color:var(--text-main);transform:translateY(-1px);}
+        .nav-item.active-nav{background:#1e293b;color:#38bdf8;border-color:#334155;}
+        .main-content{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+        .top-bar{height:65px;border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 2rem;background:#070a13;}
+        .top-bar-title{font-weight:800;font-size:1.1rem;color:white;}
+        .top-bar .tag{font-size:0.75rem;color:var(--accent);font-weight:600;}
+        .viewport{flex:1;padding:2.5rem;overflow-y:auto;box-sizing:border-box;}
+        .slide-view{display:none;animation:fadeIn 0.4s ease forwards;}
+        .slide-view.active-view{display:block;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(5px);}to{opacity:1;transform:translateY(0);}}
+        .slide-view h2{margin-top:0;font-size:1.7rem;font-weight:800;color:white;margin-bottom:0.8rem;}
+        .slide-view .subtitle{color:#94a3b8;font-size:1.15rem;margin-bottom:1.8rem;max-width:850px;}
+        .tech-points{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-top:1.5rem;}
+        .tech-point{background:var(--bg-main);border:1px solid var(--border);border-radius:10px;padding:1rem;transition:all 0.3s ease;}
+        .tech-point:hover{transform:translateY(-3px);box-shadow:0 6px 20px rgba(0,0,0,0.3);border-color:#334155;}
+        .tech-point h5{margin:0 0 0.4rem 0;color:#818cf8;font-size:0.95rem;}
+        .tech-point p{margin:0;color:#94a3b8;font-size:0.9rem;line-height:1.5;}
+    </style>
+</head>
+<body>
+    <div class="top-nav">
+        <div class="brand-zone"><h1>🛒 AegisMart AI</h1></div>
+        <div class="slide-nav-list">
+            <button class="nav-item active-nav" onclick="switchSlide(0)">摘要</button>
+            <button class="nav-item" onclick="switchSlide(1)">痛點</button>
+            <button class="nav-item" onclick="switchSlide(2)">爽點</button>
+            <button class="nav-item" onclick="switchSlide(3)">技術架構</button>
+            <button class="nav-item" onclick="switchSlide(4)">防禦防線</button>
+            <button class="nav-item" onclick="switchSlide(5)">應用場景</button>
+            <button class="nav-item" onclick="switchSlide(6)">PoC Demo</button>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="top-bar">
+            <div class="top-bar-title" id="top-title">01 . 項目摘要</div>
+            <div class="tag">AGENTIC AI BLACKHATHON 2026</div>
+        </div>
+        <div class="viewport">
+            <!-- Slide 0: 摘要 -->
+            <div class="slide-view active-view" id="slide-0">
+                <h2>AegisMart AI —— 從「固定標價」到「視覺驅動即時動態定價」</h2>
+                <p class="subtitle">過去：固定標價 → 即期品報廢 → 冷門區無人問津（每年浪費數百萬）。<br>我們：監視器 AI 感知人流 → Agent 推演促銷策略 → 店長一鍵審批 → 看板秒更新（報廢率 35%→8%）。</p>
+                <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border:1px solid #334155;border-radius:16px;padding:2rem;margin-bottom:1.5rem;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.5rem;">
+                        <div>
+                            <div style="color:#fca5a5;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.8rem;">❌ 傳統固定標價</div>
+                            <div style="display:flex;flex-direction:column;gap:0.6rem;">
+                                <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.8rem;"><span style="color:#fca5a5;font-weight:600;">即期品</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">打烊前才統一貼折扣，為時已晚</span></div>
+                                <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.8rem;"><span style="color:#fca5a5;font-weight:600;">冷門區</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">無人經過，商品曝光率趨近零</span></div>
+                                <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.8rem;"><span style="color:#fca5a5;font-weight:600;">促銷</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">7-14 天 DM 週期，無法即時反應</span></div>
+                                <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.8rem;"><span style="color:#fca5a5;font-weight:600;">人力</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">員工巡場貼標籤，成本高效率低</span></div>
+                            </div>
+                        </div>
+                        <div>
+                            <div style="color:#6ee7b7;font-size:0.7rem;text-transform:uppercase;letter-spacing:0.1em;margin-bottom:0.8rem;">✓ AegisMart AI</div>
+                            <div style="display:flex;flex-direction:column;gap:0.6rem;">
+                                <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.8rem;"><span style="color:#6ee7b7;font-weight:600;">即期品</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">黃金時間窗精準啟動，報廢率 -77%</span></div>
+                                <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.8rem;"><span style="color:#6ee7b7;font-weight:600;">冷門區</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">看板即時跳折扣，引導人流活化</span></div>
+                                <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.8rem;"><span style="color:#6ee7b7;font-weight:600;">促銷</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">分鐘級動態調整，依人流即時反應</span></div>
+                                <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.8rem;"><span style="color:#6ee7b7;font-weight:600;">人力</span><span style="color:#94a3b8;font-size:0.85rem;margin-left:0.5rem;">店長手機一鍵審批，零巡場成本</span></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div style="text-align:center;color:#64748b;font-size:0.8rem;">底層框架可複製至便利商店、量販店、百貨專櫃等所有零售場景</div>
+            </div>
+
+            <!-- Slide 1: 痛點 -->
+            <div class="slide-view" id="slide-1">
+                <h2>行業結構痛點：為什麼賣場持續浪費？</h2>
+                <p class="subtitle">報廢驚人、死角無人、促銷僵化——三重結構性困境。</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;">
+                    <div style="background:linear-gradient(180deg,#1c1017,#0f0a0d);border:1px solid #7f1d1d;border-radius:14px;padding:1.4rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.3rem;">🗑️</div>
+                        <div style="color:#fca5a5;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">即期品大量報廢</div>
+                        <p style="color:#cbd5e1;font-size:0.9rem;line-height:1.6;margin:0;">生鮮/鮮食/烘焙每日報廢率 30-40%，「打烊前統一貼折扣」太被動，錯過黃金時間窗。</p>
+                        <div style="margin-top:0.6rem;color:#f59e0b;font-size:0.82rem;font-weight:600;">📊 年報廢損失 $500 萬+</div>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1c1017,#0f0a0d);border:1px solid #7f1d1d;border-radius:14px;padding:1.4rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.3rem;">👻</div>
+                        <div style="color:#fca5a5;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">冷門區域人流死角</div>
+                        <p style="color:#cbd5e1;font-size:0.9rem;line-height:1.6;margin:0;">20% 走道貢獻不到 5% 營收，商品曝光率低，最終滯銷報廢或退貨。</p>
+                        <div style="margin-top:0.6rem;color:#f59e0b;font-size:0.82rem;font-weight:600;">📊 死角坪效僅平均值 1/4</div>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1c1017,#0f0a0d);border:1px solid #7f1d1d;border-radius:14px;padding:1.4rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.3rem;">📋</div>
+                        <div style="color:#fca5a5;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">促銷排程僵化</div>
+                        <p style="color:#cbd5e1;font-size:0.9rem;line-height:1.6;margin:0;">DM 促銷週期 7-14 天，無法回應「今天下午這區突然沒人」的即時狀況。</p>
+                        <div style="margin-top:0.6rem;color:#f59e0b;font-size:0.82rem;font-weight:600;">📊 促銷命中率 < 20%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 2: 爽點 -->
+            <div class="slide-view" id="slide-2">
+                <h2>AegisMart AI 如何創造價值？</h2>
+                <p class="subtitle">視覺感知 → 策略推演 → 店長審批 → 看板秒更新。</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;">
+                    <div style="background:linear-gradient(180deg,#0f2920,#071a14);border:1px solid #065f46;border-radius:14px;padding:1.4rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.3rem;">♻️</div>
+                        <div style="color:#6ee7b7;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">報廢率暴降（省成本）</div>
+                        <p style="color:#cbd5e1;font-size:0.9rem;line-height:1.6;margin:0;">在「還來得及賣掉」的黃金窗口精準啟動促銷，報廢率從 35% 降至 8%。</p>
+                        <div style="margin-top:0.6rem;color:#10b981;font-size:0.85rem;font-weight:700;">年省 $400 萬+ 食品浪費</div>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#0f2920,#071a14);border:1px solid #065f46;border-radius:14px;padding:1.4rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.3rem;">🧲</div>
+                        <div style="color:#6ee7b7;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">人流導引活化死角（多賺）</div>
+                        <p style="color:#cbd5e1;font-size:0.9rem;line-height:1.6;margin:0;">冷門區看板即時跳折扣，將熱區溢出人流引導至死角，全場坪效均衡提升。</p>
+                        <div style="margin-top:0.6rem;color:#10b981;font-size:0.85rem;font-weight:700;">死角區營收 +200%</div>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#0f2920,#071a14);border:1px solid #065f46;border-radius:14px;padding:1.4rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.3rem;">📱</div>
+                        <div style="color:#6ee7b7;font-weight:700;font-size:1.05rem;margin-bottom:0.5rem;">一鍵審批零人力（省力）</div>
+                        <p style="color:#cbd5e1;font-size:0.9rem;line-height:1.6;margin:0;">店長不需巡場，系統自動推播方案到手機，一鍵核准看板秒更新。</p>
+                        <div style="margin-top:0.6rem;color:#10b981;font-size:0.85rem;font-weight:700;">每日省 3hr 人工巡場</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 3: 技術架構 -->
+            <div class="slide-view" id="slide-3">
+                <h2>技術實現：Edge AI 視覺 + Multi-Agent 定價閉環</h2>
+                <p class="subtitle">監視器 AI 邊緣運算感知人流與貨架互動，LangGraph Multi-Agent 推演即時促銷策略。</p>
+                <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border:1px solid #334155;border-radius:16px;padding:2rem;margin-bottom:1.5rem;">
+                    <div style="text-align:center;margin-bottom:0.5rem;font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;">LangGraph Multi-Agent + Edge AI 視覺感知</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+                        <div style="background:linear-gradient(180deg,#1e3a5f,#0f2942);border:1px solid #2563eb;border-radius:12px;padding:1.2rem;text-align:center;">
+                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">👁️</div>
+                            <div style="color:#60a5fa;font-weight:700;font-size:0.85rem;">視覺人流感知 Agent</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">Edge AI / 人流+貨架互動</div>
+                        </div>
+                        <div style="background:linear-gradient(180deg,#1a3d2e,#0f2920);border:1px solid #10b981;border-radius:12px;padding:1.2rem;text-align:center;">
+                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">💲</div>
+                            <div style="color:#6ee7b7;font-weight:700;font-size:0.85rem;">動態定價策略 Agent</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">折扣推演 / 看板內容生成</div>
+                        </div>
+                        <div style="background:linear-gradient(180deg,#2d1b4e,#1a0f33);border:1px solid #a78bfa;border-radius:12px;padding:1.2rem;text-align:center;">
+                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">📊</div>
+                            <div style="color:#c4b5fd;font-weight:700;font-size:0.85rem;">營收反思與優化 Agent</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">每日回顧 / 行為洞察</div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:0.3rem;">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
+                    <div style="text-align:center;background:#1e293b;border:1px dashed #475569;border-radius:8px;padding:0.5rem;margin-bottom:0.8rem;color:#94a3b8;font-size:0.75rem;font-weight:600;">MCP 協議層 — Edge AI 統計 / POS 庫存 / 電子看板 API</div>
+                    <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:0.3rem;">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
+                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 1</div>
+                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">Edge AI 視覺模組</div>
+                            <div style="color:#64748b;font-size:0.72rem;">人流密度+貨架互動行為</div>
+                        </div>
+                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
+                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 2</div>
+                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">POS / ERP 庫存</div>
+                            <div style="color:#64748b;font-size:0.72rem;">即期品狀態+銷售數據</div>
+                        </div>
+                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
+                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 3</div>
+                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">電子看板 / POS 折扣</div>
+                            <div style="color:#64748b;font-size:0.72rem;">看板內容更新+折扣碼同步</div>
+                        </div>
+                    </div>
+                </div>
+                <div class="tech-points">
+                    <div class="tech-point"><h5>Edge AI 視覺感知</h5><p>NVIDIA Jetson 邊緣裝置，即時輸出人流密度、貨架拿取/放回次數、停留秒數。影像本地處理後即刪。</p></div>
+                    <div class="tech-point"><h5>貨架互動行為分析</h5><p>偵測「拿起又放回率 70%」→ 判定價格門檻過高 → 觸發降價策略推演，精準抓住購買猶豫瞬間。</p></div>
+                    <div class="tech-point"><h5>Human-in-the-Loop</h5><p>所有促銷方案推播至店長手機，審批後才更新電子看板與 POS 折扣碼。杜絕 AI 自主亂打折。</p></div>
+                    <div class="tech-point"><h5>RAG 每日反思記憶</h5><p>打烊後自動回顧促銷成效，最佳實踐存入記憶庫。下次類似情境優先調用歷史最優策略。</p></div>
+                </div>
+            </div>
+
+            <!-- Slide 4: 防禦防線 -->
+            <div class="slide-view" id="slide-4">
+                <h2>企業級防禦防線</h2>
+                <p class="subtitle">監視器涉及顧客隱私——影像零儲存、邊緣隔離是信任基石。</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:1.2rem;">
+                    <div style="background:linear-gradient(180deg,#1a1025,#0f0a18);border:1px solid #6d28d9;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">📷</div>
+                        <div style="color:#c4b5fd;font-weight:700;font-size:1.0rem;margin-bottom:0.5rem;">影像零儲存零傳輸</div>
+                        <ul style="color:#94a3b8;font-size:0.85rem;line-height:1.8;padding-left:1rem;margin:0;">
+                            <li>原始影像僅在 Edge 裝置本地處理</li>
+                            <li>僅輸出統計數據（人數、座標、互動次數）</li>
+                            <li>任何時刻皆無法回溯還原個人影像</li>
+                        </ul>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1a1025,#0f0a18);border:1px solid #6d28d9;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🔌</div>
+                        <div style="color:#c4b5fd;font-weight:700;font-size:1.0rem;margin-bottom:0.5rem;">邊緣運算隔離</div>
+                        <ul style="color:#94a3b8;font-size:0.85rem;line-height:1.8;padding-left:1rem;margin:0;">
+                            <li>AI 推論在 NVIDIA Jetson 裝置完成</li>
+                            <li>統計數據加密通道傳送，不經公網</li>
+                            <li>主機被入侵也取不到任何影像</li>
+                        </ul>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1a1025,#0f0a18);border:1px solid #6d28d9;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🛑</div>
+                        <div style="color:#c4b5fd;font-weight:700;font-size:1.0rem;margin-bottom:0.5rem;">折扣熔斷與權限控管</div>
+                        <ul style="color:#94a3b8;font-size:0.85rem;line-height:1.8;padding-left:1rem;margin:0;">
+                            <li>折扣上限硬性寫死（不超過 50%）</li>
+                            <li>不低於成本底線</li>
+                            <li>Agent 無權自主更新看板，店長審批才執行</li>
+                        </ul>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1a1025,#0f0a18);border:1px solid #6d28d9;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🧱</div>
+                        <div style="color:#c4b5fd;font-weight:700;font-size:1.0rem;margin-bottom:0.5rem;">Prompt Injection 防禦</div>
+                        <ul style="color:#94a3b8;font-size:0.85rem;line-height:1.8;padding-left:1rem;margin:0;">
+                            <li>Llama Guard 護欄攔截惡意輸入</li>
+                            <li>防止偽造庫存數據誘導虧本促銷</li>
+                            <li>異常折扣頻率自動凍結</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 5: 應用場景 -->
+            <div class="slide-view" id="slide-5">
+                <h2>規模化商業應用：跨零售場景落地</h2>
+                <p class="subtitle">超市生鮮只是 PoC。核心架構適用於所有「有人流波動 + 商品時效性」的零售場景。</p>
+                <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1.2rem;">
+                    <div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🥬</div>
+                        <div style="color:#f0abfc;font-weight:700;font-size:1.05rem;">超市生鮮區</div>
+                        <p style="color:#cbd5e1;font-size:0.92rem;line-height:1.6;margin:0.5rem 0 0 0;">晚間人流降 + 即期品庫存高<br>→ 限時折扣看板 + 鄰近走道導引</p>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🍱</div>
+                        <div style="color:#fbbf24;font-weight:700;font-size:1.05rem;">便利商店鮮食</div>
+                        <p style="color:#cbd5e1;font-size:0.92rem;line-height:1.6;margin:0.5rem 0 0 0;">午餐/晚餐尖峰 vs 離峰<br>→ 動態組合優惠（飯糰+飲料）</p>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🏬</div>
+                        <div style="color:#60a5fa;font-weight:700;font-size:1.05rem;">百貨樓層</div>
+                        <p style="color:#cbd5e1;font-size:0.92rem;line-height:1.6;margin:0.5rem 0 0 0;">高樓層人流稀疏<br>→ 看板推播限時優惠引導上樓</p>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🥐</div>
+                        <div style="color:#fb923c;font-weight:700;font-size:1.05rem;">烘焙坊/麵包店</div>
+                        <p style="color:#cbd5e1;font-size:0.92rem;line-height:1.6;margin:0.5rem 0 0 0;">下午出爐高峰 vs 傍晚剩餘<br>→ 階梯折扣清即期，報廢歸零</p>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">🛒</div>
+                        <div style="color:#a3e635;font-weight:700;font-size:1.05rem;">量販店</div>
+                        <p style="color:#cbd5e1;font-size:0.92rem;line-height:1.6;margin:0.5rem 0 0 0;">週末人潮擁擠 vs 平日冷清<br>→ 平日限時驚喜價拉平人流曲線</p>
+                    </div>
+                    <div style="background:linear-gradient(180deg,#1e293b,#0f172a);border:1px solid #334155;border-radius:14px;padding:1.5rem;transition:all 0.3s;" onmouseover="this.style.transform='translateY(-4px)'" onmouseout="this.style.transform=''">
+                        <div style="font-size:1.5rem;margin-bottom:0.4rem;">💊</div>
+                        <div style="color:#22d3ee;font-weight:700;font-size:1.05rem;">藥妝店</div>
+                        <p style="color:#cbd5e1;font-size:0.92rem;line-height:1.6;margin:0.5rem 0 0 0;">季節品/即期保健品<br>→ 換季前動態清倉 + 組合推薦</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Slide 6: PoC -->
+            <div class="slide-view" id="slide-6">
+                <h2>店長實時審批控制台</h2>
+                <p class="subtitle">以「超市生鮮區晚間即期品」為 PoC，展示系統如何偵測人流下降 + 即期庫存高，推演促銷方案，店長審批後看板即時更新。</p>
+                <a href="demo.html" target="_blank" style="display:inline-block;margin-top:2rem;padding:1rem 2.5rem;background:linear-gradient(135deg,#2563eb,#7c3aed);color:white;font-weight:700;font-size:1.1rem;border-radius:12px;text-decoration:none;transition:all 0.3s;">
+                    🚀 開啟 PoC 互動控制台 →
+                </a>
+                <p style="color:#64748b;font-size:0.8rem;margin-top:1rem;">包含 6 種賣場情境自動觸發 + Multi-Agent 促銷推演 + 店長審批看板更新</p>
+            </div>
+        </div>
+    </div>
+<script>
+const titles=["01 . 項目摘要","02 . 行業結構痛點","03 . 系統核心價值","04 . 技術架構","05 . 企業級防禦防線","06 . 跨零售場景應用","07 . PoC Demo"];
+function switchSlide(i){document.querySelectorAll('.nav-item').forEach((b,x)=>b.classList.toggle('active-nav',x===i));document.querySelectorAll('.slide-view').forEach((v,x)=>v.classList.toggle('active-view',x===i));document.getElementById('top-title').innerText=titles[i];}
+</script>
+</body>
+</html>
