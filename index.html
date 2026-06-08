@@ -195,6 +195,49 @@
                         </div>
                     </div>
                 </div>
+                <!-- Agent 運行流程圖 -->
+                <div style="background:linear-gradient(135deg,#0f172a,#1a1025);border:1px solid #334155;border-radius:16px;padding:1.5rem 2rem;margin-bottom:1.5rem;">
+                    <div style="text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;">Agent 協作運行流程</div>
+                    <div style="display:flex;align-items:center;justify-content:center;gap:0.4rem;flex-wrap:wrap;">
+                        <div style="background:#1e3a5f;border:1px solid #2563eb;border-radius:10px;padding:0.8rem 1rem;text-align:center;min-width:120px;">
+                            <div style="font-size:1.2rem;">👁️</div>
+                            <div style="color:#60a5fa;font-weight:700;font-size:0.72rem;">STEP 1</div>
+                            <div style="color:white;font-size:0.7rem;">視覺感知異常</div>
+                            <div style="color:#94a3b8;font-size:0.62rem;">人流↓ / 放回率↑ / 即期品</div>
+                        </div>
+                        <div style="color:#475569;font-size:1.5rem;">→</div>
+                        <div style="background:#1a3d2e;border:1px solid #10b981;border-radius:10px;padding:0.8rem 1rem;text-align:center;min-width:120px;">
+                            <div style="font-size:1.2rem;">💲</div>
+                            <div style="color:#6ee7b7;font-weight:700;font-size:0.72rem;">STEP 2</div>
+                            <div style="color:white;font-size:0.7rem;">策略推演</div>
+                            <div style="color:#94a3b8;font-size:0.62rem;">3 套促銷方案生成</div>
+                        </div>
+                        <div style="color:#475569;font-size:1.5rem;">→</div>
+                        <div style="background:#3b1d0b;border:1px solid #f59e0b;border-radius:10px;padding:0.8rem 1rem;text-align:center;min-width:120px;">
+                            <div style="font-size:1.2rem;">🧑‍💼</div>
+                            <div style="color:#fbbf24;font-weight:700;font-size:0.72rem;">STEP 3</div>
+                            <div style="color:white;font-size:0.7rem;">店長審批</div>
+                            <div style="color:#94a3b8;font-size:0.62rem;">Human-in-the-Loop</div>
+                        </div>
+                        <div style="color:#475569;font-size:1.5rem;">→</div>
+                        <div style="background:#0f2920;border:1px solid #10b981;border-radius:10px;padding:0.8rem 1rem;text-align:center;min-width:120px;">
+                            <div style="font-size:1.2rem;">📺</div>
+                            <div style="color:#6ee7b7;font-weight:700;font-size:0.72rem;">STEP 4</div>
+                            <div style="color:white;font-size:0.7rem;">看板上線</div>
+                            <div style="color:#94a3b8;font-size:0.62rem;">電子看板 + POS 同步</div>
+                        </div>
+                        <div style="color:#475569;font-size:1.5rem;">→</div>
+                        <div style="background:#2d1b4e;border:1px solid #a78bfa;border-radius:10px;padding:0.8rem 1rem;text-align:center;min-width:120px;">
+                            <div style="font-size:1.2rem;">📊</div>
+                            <div style="color:#c4b5fd;font-weight:700;font-size:0.72rem;">STEP 5</div>
+                            <div style="color:white;font-size:0.7rem;">打烊反思</div>
+                            <div style="color:#94a3b8;font-size:0.62rem;">Reflection + RAG 記憶</div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;margin-top:0.8rem;">
+                        <div style="display:inline-block;background:#1e293b;border:1px dashed #475569;border-radius:6px;padding:0.3rem 1rem;color:#94a3b8;font-size:0.68rem;">🔄 閉環循環：RAG 記憶回饋至 STEP 2，策略越用越精準</div>
+                    </div>
+                </div>
                 <div class="tech-points">
                     <div class="tech-point"><h5>Edge AI 視覺感知</h5><p>NVIDIA Jetson 邊緣裝置，即時輸出人流密度、貨架拿取/放回次數、停留秒數。影像本地處理後即刪。</p></div>
                     <div class="tech-point"><h5>貨架互動行為分析</h5><p>偵測「拿起又放回率 70%」→ 判定價格門檻過高 → 觸發降價策略推演，精準抓住購買猶豫瞬間。</p></div>
