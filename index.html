@@ -155,46 +155,6 @@
             <div class="slide-view" id="slide-3">
                 <h2>技術實現：Edge AI 視覺 + Multi-Agent 定價閉環</h2>
                 <p class="subtitle">監視器 AI 邊緣運算感知人流與貨架互動，LangGraph Multi-Agent 推演即時促銷策略。</p>
-                <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border:1px solid #334155;border-radius:16px;padding:2rem;margin-bottom:1.5rem;">
-                    <div style="text-align:center;margin-bottom:0.5rem;font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;">LangGraph Multi-Agent + Edge AI 視覺感知</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
-                        <div style="background:linear-gradient(180deg,#1e3a5f,#0f2942);border:1px solid #2563eb;border-radius:12px;padding:1.2rem;text-align:center;">
-                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">👁️</div>
-                            <div style="color:#60a5fa;font-weight:700;font-size:0.85rem;">視覺人流感知 Agent</div>
-                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">Edge AI / 人流+貨架互動</div>
-                        </div>
-                        <div style="background:linear-gradient(180deg,#1a3d2e,#0f2920);border:1px solid #10b981;border-radius:12px;padding:1.2rem;text-align:center;">
-                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">💲</div>
-                            <div style="color:#6ee7b7;font-weight:700;font-size:0.85rem;">動態定價策略 Agent</div>
-                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">折扣推演 / 看板內容生成</div>
-                        </div>
-                        <div style="background:linear-gradient(180deg,#2d1b4e,#1a0f33);border:1px solid #a78bfa;border-radius:12px;padding:1.2rem;text-align:center;">
-                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">📊</div>
-                            <div style="color:#c4b5fd;font-weight:700;font-size:0.85rem;">營收反思與優化 Agent</div>
-                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">每日回顧 / 行為洞察</div>
-                        </div>
-                    </div>
-                    <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:0.3rem;">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
-                    <div style="text-align:center;background:#1e293b;border:1px dashed #475569;border-radius:8px;padding:0.5rem;margin-bottom:0.8rem;color:#94a3b8;font-size:0.75rem;font-weight:600;">MCP 協議層 — Edge AI 統計 / POS 庫存 / 電子看板 API</div>
-                    <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:0.3rem;">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
-                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
-                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
-                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 1</div>
-                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">Edge AI 視覺模組</div>
-                            <div style="color:#64748b;font-size:0.72rem;">人流密度+貨架互動行為</div>
-                        </div>
-                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
-                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 2</div>
-                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">POS / ERP 庫存</div>
-                            <div style="color:#64748b;font-size:0.72rem;">即期品狀態+銷售數據</div>
-                        </div>
-                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
-                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 3</div>
-                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">電子看板 / POS 折扣</div>
-                            <div style="color:#64748b;font-size:0.72rem;">看板內容更新+折扣碼同步</div>
-                        </div>
-                    </div>
-                </div>
                 <!-- Agent 運行流程圖 -->
                 <div style="background:linear-gradient(135deg,#0f172a,#1a1025);border:1px solid #334155;border-radius:16px;padding:1.5rem 2rem;margin-bottom:1.5rem;">
                     <div style="text-align:center;margin-bottom:1rem;font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;">Agent 協作運行流程</div>
@@ -245,6 +205,46 @@
                     <div class="tech-point"><h5>RAG 每日反思記憶</h5><p>打烊後自動回顧促銷成效，最佳實踐存入記憶庫。下次類似情境優先調用歷史最優策略。</p></div>
                 </div>
             </div>
+                <div style="background:linear-gradient(135deg,#0f172a,#1e1b4b);border:1px solid #334155;border-radius:16px;padding:2rem;margin-bottom:1.5rem;">
+                    <div style="text-align:center;margin-bottom:0.5rem;font-size:0.7rem;color:#64748b;text-transform:uppercase;letter-spacing:0.1em;">LangGraph Multi-Agent + Edge AI 視覺感知</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;margin-bottom:1.5rem;">
+                        <div style="background:linear-gradient(180deg,#1e3a5f,#0f2942);border:1px solid #2563eb;border-radius:12px;padding:1.2rem;text-align:center;">
+                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">👁️</div>
+                            <div style="color:#60a5fa;font-weight:700;font-size:0.85rem;">視覺人流感知 Agent</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">Edge AI / 人流+貨架互動</div>
+                        </div>
+                        <div style="background:linear-gradient(180deg,#1a3d2e,#0f2920);border:1px solid #10b981;border-radius:12px;padding:1.2rem;text-align:center;">
+                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">💲</div>
+                            <div style="color:#6ee7b7;font-weight:700;font-size:0.85rem;">動態定價策略 Agent</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">折扣推演 / 看板內容生成</div>
+                        </div>
+                        <div style="background:linear-gradient(180deg,#2d1b4e,#1a0f33);border:1px solid #a78bfa;border-radius:12px;padding:1.2rem;text-align:center;">
+                            <div style="font-size:1.8rem;margin-bottom:0.4rem;">📊</div>
+                            <div style="color:#c4b5fd;font-weight:700;font-size:0.85rem;">營收反思與優化 Agent</div>
+                            <div style="color:#94a3b8;font-size:0.75rem;margin-top:0.3rem;">每日回顧 / 行為洞察</div>
+                        </div>
+                    </div>
+                    <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:0.3rem;">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
+                    <div style="text-align:center;background:#1e293b;border:1px dashed #475569;border-radius:8px;padding:0.5rem;margin-bottom:0.8rem;color:#94a3b8;font-size:0.75rem;font-weight:600;">MCP 協議層 — Edge AI 統計 / POS 庫存 / 電子看板 API</div>
+                    <div style="text-align:center;color:#475569;font-size:1.2rem;margin-bottom:0.3rem;">▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼ &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp; ▼</div>
+                    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:1rem;">
+                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
+                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 1</div>
+                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">Edge AI 視覺模組</div>
+                            <div style="color:#64748b;font-size:0.72rem;">人流密度+貨架互動行為</div>
+                        </div>
+                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
+                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 2</div>
+                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">POS / ERP 庫存</div>
+                            <div style="color:#64748b;font-size:0.72rem;">即期品狀態+銷售數據</div>
+                        </div>
+                        <div style="background:#020617;border:1px solid #1e293b;border-radius:10px;padding:1rem;text-align:center;">
+                            <div style="color:#f59e0b;font-weight:700;font-size:0.8rem;">MCP Server 3</div>
+                            <div style="color:white;font-size:0.85rem;font-weight:600;margin:0.3rem 0;">電子看板 / POS 折扣</div>
+                            <div style="color:#64748b;font-size:0.72rem;">看板內容更新+折扣碼同步</div>
+                        </div>
+                    </div>
+                </div>
 
             <!-- Slide 4: 防禦防線 -->
             <div class="slide-view" id="slide-4">
