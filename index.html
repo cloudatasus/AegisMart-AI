@@ -293,6 +293,25 @@
                     🚀 開啟 PoC 互動控制台 →
                 </a>
                 <p style="color:#64748b;font-size:0.8rem;margin-top:1rem;">包含 6 種賣場情境自動觸發 + Multi-Agent 促銷推演 + 店長審批看板更新</p>
+                <div style="margin-top:2rem;background:#0f172a;border:1px solid #334155;border-left:4px solid #f59e0b;border-radius:10px;padding:1rem 1.2rem;">
+                    <div style="color:#fbbf24;font-size:0.88rem;font-weight:700;margin-bottom:0.4rem;">📐 實務部署：漸進式導入策略</div>
+                    <p style="color:#94a3b8;font-size:0.88rem;line-height:1.6;margin:0;">PoC 展示為加速演示採用即時觸發。實務部署採用<strong style="color:#cbd5e1;">三階段導入</strong>：Phase 1 僅用既有監視器做人流計數（零硬體投資）；Phase 2 加入貨架互動偵測（Edge AI 模組）；Phase 3 串接 POS 做全自動閉環。每階段獨立可用，不需一次到位。</p>
+                </div>
+                <div style="margin-top:1.2rem;text-align:center;">
+                    <button onclick="document.getElementById('reality-box').style.display=document.getElementById('reality-box').style.display==='none'?'block':'none'" style="background:#1e293b;color:#94a3b8;border:1px solid #334155;padding:0.5rem 1.2rem;border-radius:8px;cursor:pointer;font-size:0.75rem;font-weight:600;transition:all 0.2s;" onmouseover="this.style.color='#fbbf24';this.style.borderColor='#f59e0b'" onmouseout="this.style.color='#94a3b8';this.style.borderColor='#334155'">📐 商業化落地：困境與因應之道 ▼</button>
+                </div>
+                <div id="reality-box" style="display:none;margin-top:1rem;border:1px solid #334155;border-radius:12px;padding:1.2rem;background:#0f172a;">
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:0.6rem;">
+                        <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.7rem;"><div style="color:#fca5a5;font-weight:600;font-size:0.72rem;">❌ 電子看板成本高</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">每台螢幕 $3-5 萬，全場佈建成本驚人。</p></div>
+                        <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.7rem;"><div style="color:#6ee7b7;font-weight:600;font-size:0.72rem;">✅ 先用既有設備</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">Phase 1 用賣場原有廣告螢幕/電視，僅需安裝播放軟體。</p></div>
+                        <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.7rem;"><div style="color:#fca5a5;font-weight:600;font-size:0.72rem;">❌ 消費者信任疑慮</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">「被監視器看著買東西」引發隱私恐慌。</p></div>
+                        <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.7rem;"><div style="color:#6ee7b7;font-weight:600;font-size:0.72rem;">✅ 只看人流不看人臉</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">Edge AI 僅輸出匿名統計，零影像儲存，公開技術白皮書建立信任。</p></div>
+                        <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.7rem;"><div style="color:#fca5a5;font-weight:600;font-size:0.72rem;">❌ 店長不信任 AI 定價</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">資深店長靠經驗，不願讓機器決定折扣。</p></div>
+                        <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.7rem;"><div style="color:#6ee7b7;font-weight:600;font-size:0.72rem;">✅ AI 建議 + 人類決定</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">100% Human-in-the-Loop，AI 僅推薦，店長有最終否決權。先建信任再擴大權限。</p></div>
+                        <div style="background:#1c1017;border:1px solid #7f1d1d;border-radius:8px;padding:0.7rem;"><div style="color:#fca5a5;font-weight:600;font-size:0.72rem;">❌ POS 系統碎片化</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">各賣場用不同 POS 廠商，API 規格不統一。</p></div>
+                        <div style="background:#0f2920;border:1px solid #065f46;border-radius:8px;padding:0.7rem;"><div style="color:#6ee7b7;font-weight:600;font-size:0.72rem;">✅ 看板獨立於 POS</div><p style="color:#64748b;font-size:0.68rem;line-height:1.5;margin:0.2rem 0 0 0;">Phase 1 看板僅展示促銷資訊，結帳由店員手動輸入折扣碼，零 POS 整合。</p></div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
