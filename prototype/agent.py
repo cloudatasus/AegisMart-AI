@@ -24,6 +24,7 @@ class AgentDecision:
     severity: str  # normal / warning / critical
     promotions: list  # List[Promotion]
     timestamp: str
+    created_at: float = 0.0
 
 
 class MartAgent:
@@ -49,13 +50,14 @@ class MartAgent:
 
     def evaluate(self, zone_stats: list, total_count: int) -> tuple:
         """
-        評估當前人流狀態，決定是否觸發促銷推薦
+        評估當前人流狀態，回傳所有觸發區域的決策清單（交由人類全覽後核准）。
 
         Returns:
-            (AgentDecision | None, list[str])  — 決策 + debug 訊息列表
+            (list[AgentDecision], list[str])  — 所有觸發決策 + debug 訊息
         """
         now = time.time()
         debug_msgs = []
+        decisions = []
 
         for zone in zone_stats:
             name = zone["name"]
@@ -68,28 +70,25 @@ class MartAgent:
                 debug_msgs.append(f"[Agent] {name} 冷卻中，剩餘 {remaining}s，跳過評估")
                 continue
 
-            # 情境 1：區域無人
+            decision = None
             if count == 0 and avg >= 2:
                 decision = self._generate_dead_zone_plan(name)
-                self.cooldown[name] = now
-                self.history.append(decision)
-                return decision, debug_msgs
-
-            # 情境 2：人流驟降（低於平均的門檻，且人數 <= 2）
-            if avg > 3 and count <= self.thresholds["low_traffic"] and count <= avg * self.thresholds["drop_rate"]:
+            elif avg > 3 and count <= self.thresholds["low_traffic"] and count <= avg * self.thresholds["drop_rate"]:
                 decision = self._generate_low_traffic_plan(name, count, avg)
-                self.cooldown[name] = now
-                self.history.append(decision)
-                return decision, debug_msgs
-
-            # 情境 3：人流爆滿
-            if count >= self.thresholds["high_traffic"]:
+            elif count >= self.thresholds["high_traffic"]:
                 decision = self._generate_peak_plan(name, count)
+
+            if decision:
+                decision.created_at = now
                 self.cooldown[name] = now
                 self.history.append(decision)
-                return decision, debug_msgs
+                decisions.append(decision)
 
-        return None, debug_msgs
+        if len(decisions) > 1:
+            zones_str = "、".join(d.zone_name for d in decisions)
+            debug_msgs.append(f"[Agent] 同時偵測到 {len(decisions)} 個異常區域：{zones_str}")
+
+        return decisions, debug_msgs
 
     def _generate_low_traffic_plan(self, zone: str, count: int, avg: float) -> AgentDecision:
         """人流驟降 → 即期品促銷（依區域客製化文案）"""

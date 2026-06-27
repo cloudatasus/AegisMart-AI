@@ -36,8 +36,8 @@ def init_session_state():
         st.session_state.log = ["[System] AegisMart AI 已啟動，等待開始監控..."]
     if "approved" not in st.session_state:
         st.session_state.approved = []
-    if "current_decision" not in st.session_state:
-        st.session_state.current_decision = None
+    if "current_decisions" not in st.session_state:
+        st.session_state.current_decisions = []
     if "running" not in st.session_state:
         st.session_state.running = False
     if "video_path" not in st.session_state:
@@ -62,8 +62,6 @@ def init_session_state():
         st.session_state.sim_base = 8
     if "sim_weights" not in st.session_state:
         st.session_state.sim_weights = [3, 2, 2, 3]
-    if "decision_created_at" not in st.session_state:
-        st.session_state.decision_created_at = 0.0
 
 
 # ── 左側監控 fragment（每 3 秒自動刷新，不影響右側）──────────────────────────
@@ -102,36 +100,39 @@ def sim_monitor_fragment():
         add_log("[Simulation] 模擬模式啟動，各區域人流隨機漫步中...")
         add_log("[Simulation] 異常由機率自然觸發，Agent 即時偵測中")
 
-    # 狀況解除檢查：區域回升 + 方案已停留超過最短秒數才撤銷
-    if st.session_state.current_decision is not None:
-        pending = st.session_state.current_decision
-        min_pending = st.session_state.get("min_pending_seconds", 30)
-        elapsed = time.time() - st.session_state.decision_created_at
-        for zone in zones_data:
-            if zone["name"] == pending.zone_name:
-                count, avg = zone["count"], zone["avg"]
-                recovered = avg > 0 and count > avg * 0.5
-                if recovered and elapsed >= min_pending:
-                    add_log(f"[Agent] ✅ {pending.zone_name} 狀況已解除，故方案暫延")
-                    st.session_state.agent.clear_cooldown(pending.zone_name)
-                    st.session_state.current_decision = None
-                    st.rerun()
-                elif recovered and elapsed < min_pending:
-                    remaining = int(min_pending - elapsed)
-                    add_log(f"[Agent] {pending.zone_name} 已回升，方案再保留 {remaining}s 供審批")
-                break
+    # 狀況解除檢查：各區域獨立判斷，回升後移出待審清單
+    min_pending = st.session_state.get("min_pending_seconds", 30)
+    now_t = time.time()
+    still_pending, resolved_any = [], False
+    for pending in st.session_state.current_decisions:
+        zone_data = next((z for z in zones_data if z["name"] == pending.zone_name), None)
+        if zone_data:
+            count, avg = zone_data["count"], zone_data["avg"]
+            recovered = avg > 0 and count > avg * 0.5
+            elapsed = now_t - pending.created_at
+            if recovered and elapsed >= min_pending:
+                add_log(f"[Agent] ✅ {pending.zone_name} 狀況已解除，撤銷方案")
+                st.session_state.agent.clear_cooldown(pending.zone_name)
+                resolved_any = True
+            else:
+                if recovered:
+                    add_log(f"[Agent] {pending.zone_name} 已回升，方案再保留 {int(min_pending - elapsed)}s")
+                still_pending.append(pending)
+    if resolved_any:
+        st.session_state.current_decisions = still_pending
 
-    # 異常偵測：只在無待審批決策時評估
-    if st.session_state.current_decision is None:
-        decision, debug_msgs = st.session_state.agent.evaluate(zones_data, total)
-        for msg in debug_msgs:
-            add_log(msg)
-        if decision:
-            st.session_state.current_decision = decision
-            st.session_state.decision_created_at = time.time()
-            add_log(f"[Agent] ⚠️ {decision.trigger_reason}")
-            add_log(f"[Agent] 已推演 {len(decision.promotions)} 套方案，等待店長審批...")
-            st.rerun()
+    # 異常偵測：持續評估，新發現加入清單
+    new_decisions, debug_msgs = st.session_state.agent.evaluate(zones_data, total)
+    for msg in debug_msgs:
+        add_log(msg)
+    if new_decisions:
+        st.session_state.current_decisions.extend(new_decisions)
+        for d in new_decisions:
+            add_log(f"[Agent] ⚠️ {d.trigger_reason}")
+            add_log(f"[Agent] 已推演 {len(d.promotions)} 套方案，等待店長審批...")
+
+    if resolved_any or new_decisions:
+        st.rerun()
 
 
 # ── 模擬資料產生 ─────────────────────────────────────────────────────────────
@@ -168,7 +169,7 @@ def simulate_zone_counts(tick: int) -> tuple[list[dict], int]:
     prev_smooth = st.session_state.sim_zone_smooth
     alpha = 0.35
     new_smooth = [
-        alpha * t + (1 - alpha) * p + random.uniform(-0.4, 0.4)
+        alpha * t + (1 - alpha) * p + random.gauss(0, max(1.5, p * 0.08))
         for t, p in zip(targets, prev_smooth)
     ]
     new_counts = [max(0, round(s)) for s in new_smooth]
@@ -255,41 +256,46 @@ def draw_store_map(zones_data: list[dict], total: int, tick: int) -> np.ndarray:
 # ── 右側 Agent 面板（主流程渲染，只在整頁 rerun 時更新）────────────────────
 
 def render_agent_panel():
-    decision = st.session_state.current_decision
+    decisions = st.session_state.current_decisions
 
-    if decision is None:
+    if not decisions:
         st.info("✅ 各區域正常，持續監控中...")
         return
 
-    if decision.severity == "critical":
-        st.error(f"🚨 **{decision.trigger_reason}**")
-    else:
-        st.warning(f"⚠️ **{decision.trigger_reason}**")
+    for decision in decisions:
+        if decision.severity == "critical":
+            st.error(f"🚨 **{decision.trigger_reason}**")
+        else:
+            st.warning(f"⚠️ **{decision.trigger_reason}**")
+        st.markdown(f"*觸發時間：{decision.timestamp}*")
 
-    st.markdown(f"*觸發時間：{decision.timestamp}*")
-    st.markdown("---")
+        for i, promo in enumerate(decision.promotions):
+            col_info, col_btn = st.columns([4, 1])
+            with col_info:
+                badge = {"推薦": "🟢", "低風險": "🔵", "中風險": "🟡", "激進": "🔴", "創新": "🟣"}.get(promo.risk_level, "⚪")
+                st.markdown(f"**{badge} {promo.name}** ({promo.risk_level})")
+                st.markdown(f"_{promo.description}_")
+                st.caption(f"預期效果：{promo.expected_effect}")
+            with col_btn:
+                if st.button("核准 ✓", key=f"approve_{decision.zone_name}_{decision.timestamp}_{i}",
+                             use_container_width=True):
+                    approve_promotion(promo, decision)
+                    st.rerun()
 
-    for i, promo in enumerate(decision.promotions):
-        col_info, col_btn = st.columns([4, 1])
-        with col_info:
-            badge = {"推薦": "🟢", "低風險": "🔵", "中風險": "🟡", "激進": "🔴", "創新": "🟣"}.get(promo.risk_level, "⚪")
-            st.markdown(f"**{badge} {promo.name}** ({promo.risk_level})")
-            st.markdown(f"_{promo.description}_")
-            st.caption(f"預期效果：{promo.expected_effect}")
-        with col_btn:
-            if st.button("核准 ✓", key=f"approve_{decision.timestamp}_{i}",
-                         use_container_width=True):
-                approve_promotion(promo, decision.zone_name)
-                st.rerun()
+        st.markdown("---")
 
 
-def approve_promotion(promo, zone_name):
-    add_log(f"[Human-in-the-Loop] ✅ 店長核准「{promo.name}」")
+def approve_promotion(promo, decision):
+    zone_name = decision.zone_name
+    add_log(f"[Human-in-the-Loop] ✅ 店長核准「{promo.name}」@ {zone_name}")
     add_log(f"[MCP] 📺 {zone_name} 電子看板已更新")
     add_log(f"[MCP] 🏷️ POS 折扣碼同步完成")
     add_log(f"[RAG] 💾 寫入策略記憶庫")
     st.session_state.approved.append(f"{promo.name} @ {zone_name}")
-    st.session_state.current_decision = None
+    st.session_state.current_decisions = [
+        d for d in st.session_state.current_decisions
+        if not (d.zone_name == zone_name and d.timestamp == decision.timestamp)
+    ]
 
 
 def render_log():
@@ -298,7 +304,11 @@ def render_log():
 
 
 def add_log(msg: str):
-    timestamp = time.strftime("%H:%M:%S")
+    if st.session_state.get("sim_mode") and st.session_state.get("running"):
+        h = st.session_state.get("sim_hour", 0.0)
+        timestamp = f"{int(h):02d}:{int((h % 1) * 60):02d}"
+    else:
+        timestamp = time.strftime("%H:%M:%S")
     st.session_state.log.append(f"[{timestamp}] {msg}")
 
 
@@ -394,8 +404,7 @@ def main():
             st.session_state.sim_tick = 0
             st.session_state.sim_hour = st.session_state.sim_hour_start
             st.session_state.log = ["[System] AegisMart AI 已啟動，賣場視覺監控中..."]
-            st.session_state.current_decision = None
-            st.session_state.decision_created_at = 0.0
+            st.session_state.current_decisions = []
             st.session_state.agent.reset_cooldowns()
             # 波形模型初始化
             weights = st.session_state.sim_weights
