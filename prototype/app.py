@@ -1,11 +1,13 @@
 """
 AegisMart AI - Streamlit 控制台
-影片畫面 + 即時人流數字 + Agent 推演 + 店長審批按鈕
+左側監控畫面每 3 秒自動刷新（fragment），右側 Agent 面板只在異常時更新
 """
 import streamlit as st
 import cv2
 import numpy as np
 import time
+import random
+import math
 from detector import PeopleDetector, create_default_detector
 from agent import MartAgent
 
@@ -20,43 +22,18 @@ st.set_page_config(
 st.markdown("""
 <style>
     .stApp { background-color: #0f172a; }
-    .metric-card {
-        background: #1e293b;
-        border: 1px solid #334155;
-        border-radius: 12px;
-        padding: 1rem;
-        text-align: center;
-    }
-    .metric-value { font-size: 2rem; font-weight: 800; color: #f8fafc; }
-    .metric-label { font-size: 0.8rem; color: #94a3b8; }
-    .alert-box {
-        background: #1c1017;
-        border: 1px solid #ef4444;
-        border-left: 4px solid #ef4444;
-        border-radius: 8px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-    }
-    .promotion-card {
-        background: #0f172a;
-        border: 1px solid #334155;
-        border-radius: 10px;
-        padding: 1rem;
-        margin: 0.5rem 0;
-    }
     .log-entry { font-family: monospace; font-size: 0.8rem; color: #38bdf8; }
 </style>
 """, unsafe_allow_html=True)
 
 
 def init_session_state():
-    """初始化 session state"""
     if "detector" not in st.session_state:
         st.session_state.detector = create_default_detector()
     if "agent" not in st.session_state:
         st.session_state.agent = MartAgent()
     if "log" not in st.session_state:
-        st.session_state.log = ["[System] AegisMart AI 已啟動，賣場視覺監控中..."]
+        st.session_state.log = ["[System] AegisMart AI 已啟動，等待開始監控..."]
     if "approved" not in st.session_state:
         st.session_state.approved = []
     if "current_decision" not in st.session_state:
@@ -65,186 +42,415 @@ def init_session_state():
         st.session_state.running = False
     if "video_path" not in st.session_state:
         st.session_state.video_path = ""
+    if "sim_tick" not in st.session_state:
+        st.session_state.sim_tick = 0
+    if "sim_mode" not in st.session_state:
+        st.session_state.sim_mode = True
+    if "sim_zone_counts" not in st.session_state:
+        st.session_state.sim_zone_counts = [8, 5, 4, 6]
+    if "sim_zone_smooth" not in st.session_state:
+        st.session_state.sim_zone_smooth = [8.0, 5.0, 4.0, 6.0]
+    if "sim_hour" not in st.session_state:
+        st.session_state.sim_hour = 8.0
+    if "sim_hour_start" not in st.session_state:
+        st.session_state.sim_hour_start = 8.0
+    if "sim_hour_end" not in st.session_state:
+        st.session_state.sim_hour_end = 22.0
+    if "sim_peak" not in st.session_state:
+        st.session_state.sim_peak = 50
+    if "sim_base" not in st.session_state:
+        st.session_state.sim_base = 8
+    if "sim_weights" not in st.session_state:
+        st.session_state.sim_weights = [3, 2, 2, 3]
+    if "decision_created_at" not in st.session_state:
+        st.session_state.decision_created_at = 0.0
 
 
-def main():
-    init_session_state()
+# ── 左側監控 fragment（每 3 秒自動刷新，不影響右側）──────────────────────────
 
-    # === Header ===
-    st.markdown("# 🛒 AegisMart AI — 店長即時控制台")
-    st.markdown("*Edge AI 視覺感知 → Agent 策略推演 → 店長審批 → 看板更新*")
-    st.divider()
-
-    # === Sidebar: 設定 ===
-    with st.sidebar:
-        st.markdown("### ⚙️ 系統設定")
-        video_source = st.text_input(
-            "影片來源（本地路徑或 YouTube URL）",
-            value=st.session_state.video_path or "sample.mp4",
-            help="支援本地 .mp4 檔案或 YouTube 連結"
-        )
-        st.session_state.video_path = video_source
-
-        confidence = st.slider("偵測信心閾值", 0.2, 0.8, 0.4, 0.05)
-        st.session_state.detector.confidence = confidence
-
-        st.markdown("### 📊 區域設定")
-        st.info("預設 4 區域：生鮮區、零食區、飲料區、結帳區\n可在程式碼中自訂座標")
-
-        st.markdown("### 📋 審批記錄")
-        for item in st.session_state.approved[-5:]:
-            st.success(f"✅ {item}", icon="✅")
-
-    # === Main Layout ===
-    col_video, col_panel = st.columns([3, 2])
-
-    with col_video:
-        st.markdown("### 📹 即時監控畫面")
-        video_placeholder = st.empty()
-        metrics_placeholder = st.empty()
-
-    with col_panel:
-        st.markdown("### 🤖 Agent 推演")
-        agent_placeholder = st.empty()
-        st.markdown("### 📜 系統日誌")
-        log_placeholder = st.empty()
-
-    # === Control Buttons ===
-    col_start, col_stop = st.columns(2)
-    with col_start:
-        start_btn = st.button("▶️ 啟動監控", use_container_width=True, type="primary")
-    with col_stop:
-        stop_btn = st.button("⏹️ 停止監控", use_container_width=True)
-
-    if stop_btn:
-        st.session_state.running = False
-
-    if start_btn:
-        st.session_state.running = True
-        run_detection(video_source, video_placeholder, metrics_placeholder,
-                     agent_placeholder, log_placeholder)
-
-
-def run_detection(video_source, video_ph, metrics_ph, agent_ph, log_ph):
-    """執行影片偵測主迴圈"""
-    detector = st.session_state.detector
-    agent = st.session_state.agent
-
-    # 開啟影片
-    cap = cv2.VideoCapture(video_source)
-    if not cap.isOpened():
-        st.error(f"❌ 無法開啟影片：{video_source}")
+@st.fragment(run_every=5)
+def sim_monitor_fragment():
+    """模擬監控 — 每 3 秒刷新一次，僅更新左側畫面與指標"""
+    if not st.session_state.running:
+        st.info("⏸️ 監控已暫停")
         return
 
-    add_log(f"[Edge AI] 影片已載入：{video_source}")
-    add_log("[Edge AI] YOLOv8 人流偵測啟動...")
+    tick = st.session_state.sim_tick
+    zones_data, total = simulate_zone_counts(tick)
 
-    frame_skip = 2  # 每 N 幀處理一次（加速）
-    frame_idx = 0
+    # 人流指標（監控畫面上方）
+    cols = st.columns(len(zones_data) + 1)
+    cols[0].metric("👥 全場人數", total)
+    for i, zone in enumerate(zones_data):
+        delta = zone["count"] - zone["avg"]
+        cols[i + 1].metric(
+            f"📍 {zone['name']}",
+            f"{zone['count']} 人",
+            f"{delta:+.0f} vs 平均"
+        )
 
-    while st.session_state.running and cap.isOpened():
-        ret, frame = cap.read()
-        if not ret:
-            cap.set(cv2.CAP_PROP_POS_FRAMES, 0)  # 循環播放
-            continue
+    # 賣場平面圖
+    frame = draw_store_map(zones_data, total, tick)
+    frame_rgb = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
+    st.image(frame_rgb, channels="RGB", use_container_width=True)
 
-        frame_idx += 1
-        if frame_idx % frame_skip != 0:
-            continue
+    # 推進 tick
+    st.session_state.sim_tick += 1
 
-        # YOLO 偵測
-        result = detector.detect_frame(frame)
+    # 記錄初始日誌
+    if tick == 0:
+        add_log("[Simulation] 模擬模式啟動，各區域人流隨機漫步中...")
+        add_log("[Simulation] 異常由機率自然觸發，Agent 即時偵測中")
 
-        # 顯示影片畫面
-        annotated_rgb = cv2.cvtColor(result["annotated_frame"], cv2.COLOR_BGR2RGB)
-        video_ph.image(annotated_rgb, channels="RGB", use_container_width=True)
+    # 狀況解除檢查：區域回升 + 方案已停留超過最短秒數才撤銷
+    if st.session_state.current_decision is not None:
+        pending = st.session_state.current_decision
+        min_pending = st.session_state.get("min_pending_seconds", 30)
+        elapsed = time.time() - st.session_state.decision_created_at
+        for zone in zones_data:
+            if zone["name"] == pending.zone_name:
+                count, avg = zone["count"], zone["avg"]
+                recovered = avg > 0 and count > avg * 0.5
+                if recovered and elapsed >= min_pending:
+                    add_log(f"[Agent] ✅ {pending.zone_name} 狀況已解除，故方案暫延")
+                    st.session_state.agent.clear_cooldown(pending.zone_name)
+                    st.session_state.current_decision = None
+                    st.rerun()
+                elif recovered and elapsed < min_pending:
+                    remaining = int(min_pending - elapsed)
+                    add_log(f"[Agent] {pending.zone_name} 已回升，方案再保留 {remaining}s 供審批")
+                break
 
-        # 顯示指標
-        with metrics_ph.container():
-            cols = st.columns(len(result["zones"]) + 1)
-            cols[0].metric("👥 全場人數", result["total_count"])
-            for i, zone in enumerate(result["zones"]):
-                delta = zone["count"] - zone["avg"] if zone["avg"] > 0 else 0
-                cols[i+1].metric(
-                    f"📍 {zone['name']}",
-                    f"{zone['count']} 人",
-                    f"{delta:+.0f} vs 平均"
-                )
-
-        # Agent 評估
-        decision = agent.evaluate(result["zones"], result["total_count"])
+    # 異常偵測：只在無待審批決策時評估
+    if st.session_state.current_decision is None:
+        decision, debug_msgs = st.session_state.agent.evaluate(zones_data, total)
+        for msg in debug_msgs:
+            add_log(msg)
         if decision:
             st.session_state.current_decision = decision
-            add_log(f"[Agent] {decision.trigger_reason}")
+            st.session_state.decision_created_at = time.time()
+            add_log(f"[Agent] ⚠️ {decision.trigger_reason}")
             add_log(f"[Agent] 已推演 {len(decision.promotions)} 套方案，等待店長審批...")
-
-        # 顯示 Agent 面板
-        render_agent_panel(agent_ph)
-
-        # 顯示日誌
-        render_log(log_ph)
-
-        time.sleep(0.05)  # 控制更新速率
-
-    cap.release()
-    add_log("[System] 監控已停止")
+            st.rerun()
 
 
-def render_agent_panel(placeholder):
-    """渲染 Agent 推演面板"""
+# ── 模擬資料產生 ─────────────────────────────────────────────────────────────
+
+def _store_wave(hour: float, peak: int, base: int) -> int:
+    """全場人流波形：早上小高峰(10)、午餐(12.5)、傍晚大高峰(18.5)"""
+    def bump(h, center, width, height):
+        return height * max(0.0, math.cos(math.pi * (h - center) / width))
+
+    level = (bump(hour, 10.0, 2.5, 0.55) +
+             bump(hour, 12.5, 1.5, 0.75) +
+             bump(hour, 18.5, 2.5, 1.00))
+    level = max(0.0, min(1.0, level))
+    return max(base, int(base + (peak - base) * level))
+
+
+def simulate_zone_counts(tick: int) -> tuple[list[dict], int]:
+    """波形驅動 + 人流守恆分配模型"""
+    names   = ["生鮮區", "烘焙區", "乳品區", "熟食區"]
+    hour    = st.session_state.sim_hour
+    peak    = st.session_state.sim_peak
+    base    = st.session_state.sim_base
+    weights = st.session_state.sim_weights
+
+    # Layer 1：全場總人數（波形 + 微小雜訊）
+    store_total = _store_wave(hour, peak, base)
+    store_total = max(base, store_total + random.randint(-2, 2))
+
+    # Layer 2：依吸引力權重分配到各區域
+    total_w = sum(weights)
+    targets = [store_total * w / total_w for w in weights]
+
+    # 指數平滑（alpha=0.35）讓人數緩慢趨近目標，不瞬間跳變
+    prev_smooth = st.session_state.sim_zone_smooth
+    alpha = 0.35
+    new_smooth = [
+        alpha * t + (1 - alpha) * p + random.uniform(-0.4, 0.4)
+        for t, p in zip(targets, prev_smooth)
+    ]
+    new_counts = [max(0, round(s)) for s in new_smooth]
+
+    st.session_state.sim_zone_smooth = new_smooth
+    st.session_state.sim_zone_counts = new_counts
+
+    # 時間推進：每 tick（5 秒）= 模擬 2 分鐘，到結束時段後回繞
+    hour_start = st.session_state.get("sim_hour_start", 8.0)
+    hour_end = st.session_state.get("sim_hour_end", 22.0)
+    next_hour = hour + 2 / 60
+    st.session_state.sim_hour = hour_start if next_hour >= hour_end else next_hour
+
+    # 各區域的「歷史平均」= 以中段時間（尖峰 60%）為基準
+    mid_total = base + (peak - base) * 0.6
+    avgs = [mid_total * w / total_w for w in weights]
+
+    zones_data = [
+        {"name": names[i], "count": new_counts[i], "avg": round(avgs[i], 1)}
+        for i in range(4)
+    ]
+    return zones_data, sum(new_counts)
+
+
+ZONE_LABELS_EN = {
+    "生鮮區": "Fresh",
+    "烘焙區": "Bakery",
+    "乳品區": "Dairy",
+    "熟食區": "Deli",
+}
+
+
+def draw_store_map(zones_data: list[dict], total: int, tick: int) -> np.ndarray:
+    """繪製賣場平面示意圖"""
+    W, H = 720, 480
+    canvas = np.zeros((H, W, 3), dtype=np.uint8)
+    canvas[:] = (15, 23, 42)
+
+    layout = [
+        (0,   0,   360, 240),
+        (360, 0,   720, 240),
+        (0,   240, 360, 480),
+        (360, 240, 720, 480),
+    ]
+    colors_normal = [(34, 197, 94), (59, 130, 246), (234, 179, 8), (168, 85, 247)]
+
+    for i, zone in enumerate(zones_data):
+        x1, y1, x2, y2 = layout[i]
+        count, avg = zone["count"], zone["avg"]
+        is_alert = count < avg * 0.5 and avg > 0
+
+        base_c = (239, 68, 68) if is_alert else colors_normal[i]
+        alpha = max(0.15, min(0.7, count / 12.0))
+        fill = tuple(int(c * alpha) for c in base_c)
+
+        cv2.rectangle(canvas, (x1+2, y1+2), (x2-2, y2-2), fill, -1)
+        border = (239, 68, 68) if is_alert else (51, 65, 85)
+        cv2.rectangle(canvas, (x1+2, y1+2), (x2-2, y2-2), border, 3 if is_alert else 1)
+
+        cx, cy = (x1+x2)//2, (y1+y2)//2
+        label = ZONE_LABELS_EN.get(zone["name"], zone["name"])
+        (tw, _), _ = cv2.getTextSize(label, cv2.FONT_HERSHEY_SIMPLEX, 0.8, 2)
+        cv2.putText(canvas, label, (cx-tw//2, cy-20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (248, 250, 252), 2)
+
+        count_str = f"{count} ppl"
+        (cw, _), _ = cv2.getTextSize(count_str, cv2.FONT_HERSHEY_SIMPLEX, 1.2, 3)
+        cv2.putText(canvas, count_str, (cx-cw//2, cy+20),
+                    cv2.FONT_HERSHEY_SIMPLEX, 1.2, (239, 68, 68) if is_alert else (248, 250, 252), 3)
+
+        if is_alert:
+            cv2.putText(canvas, "! LOW TRAFFIC", (cx-70, cy+58),
+                        cv2.FONT_HERSHEY_SIMPLEX, 0.55, (239, 68, 68), 2)
+
+    hour = st.session_state.get("sim_hour", 10.0)
+    hh, mm = int(hour), int((hour % 1) * 60)
+    info = f"  T+{tick:03d}s  |  模擬時段 {hh:02d}:{mm:02d}  |  Total: {total} ppl"
+    cv2.rectangle(canvas, (0, H-30), (W, H), (30, 41, 59), -1)
+    cv2.putText(canvas, info, (10, H-10),
+                cv2.FONT_HERSHEY_SIMPLEX, 0.5, (148, 163, 184), 1)
+    return canvas
+
+
+# ── 右側 Agent 面板（主流程渲染，只在整頁 rerun 時更新）────────────────────
+
+def render_agent_panel():
     decision = st.session_state.current_decision
 
-    with placeholder.container():
-        if decision is None:
-            st.info("✅ 各區域正常，持續監控中...")
-            return
+    if decision is None:
+        st.info("✅ 各區域正常，持續監控中...")
+        return
 
-        # 觸發原因
-        if decision.severity == "critical":
-            st.error(f"🚨 **{decision.trigger_reason}**")
-        else:
-            st.warning(f"⚠️ **{decision.trigger_reason}**")
+    if decision.severity == "critical":
+        st.error(f"🚨 **{decision.trigger_reason}**")
+    else:
+        st.warning(f"⚠️ **{decision.trigger_reason}**")
 
-        st.markdown(f"*觸發時間：{decision.timestamp}*")
-        st.markdown("---")
+    st.markdown(f"*觸發時間：{decision.timestamp}*")
+    st.markdown("---")
 
-        # 方案列表
-        for i, promo in enumerate(decision.promotions):
-            col_info, col_btn = st.columns([4, 1])
-            with col_info:
-                badge_color = {"推薦": "🟢", "低風險": "🔵", "中風險": "🟡", "激進": "🔴", "創新": "🟣"}
-                badge = badge_color.get(promo.risk_level, "⚪")
-                st.markdown(f"**{badge} {promo.name}** ({promo.risk_level})")
-                st.markdown(f"_{promo.description}_")
-                st.caption(f"預期效果：{promo.expected_effect}")
-            with col_btn:
-                if st.button("核准 ✓", key=f"approve_{decision.timestamp}_{i}",
-                           use_container_width=True):
-                    approve_promotion(promo, decision.zone_name)
+    for i, promo in enumerate(decision.promotions):
+        col_info, col_btn = st.columns([4, 1])
+        with col_info:
+            badge = {"推薦": "🟢", "低風險": "🔵", "中風險": "🟡", "激進": "🔴", "創新": "🟣"}.get(promo.risk_level, "⚪")
+            st.markdown(f"**{badge} {promo.name}** ({promo.risk_level})")
+            st.markdown(f"_{promo.description}_")
+            st.caption(f"預期效果：{promo.expected_effect}")
+        with col_btn:
+            if st.button("核准 ✓", key=f"approve_{decision.timestamp}_{i}",
+                         use_container_width=True):
+                approve_promotion(promo, decision.zone_name)
+                st.rerun()
 
 
 def approve_promotion(promo, zone_name):
-    """店長核准促銷方案"""
     add_log(f"[Human-in-the-Loop] ✅ 店長核准「{promo.name}」")
-    add_log(f"[MCP] 📺 {zone_name}電子看板已更新")
+    add_log(f"[MCP] 📺 {zone_name} 電子看板已更新")
     add_log(f"[MCP] 🏷️ POS 折扣碼同步完成")
     add_log(f"[RAG] 💾 寫入策略記憶庫")
     st.session_state.approved.append(f"{promo.name} @ {zone_name}")
     st.session_state.current_decision = None
-    st.success(f"🚀 「{promo.name}」已上線！看板已更新")
 
 
-def render_log(placeholder):
-    """渲染系統日誌"""
-    with placeholder.container():
-        log_text = "\n".join(st.session_state.log[-15:])
-        st.code(log_text, language="")
+def render_log():
+    log_text = "\n".join(st.session_state.log[-15:])
+    st.code(log_text, language="")
 
 
 def add_log(msg: str):
-    """新增日誌"""
     timestamp = time.strftime("%H:%M:%S")
     st.session_state.log.append(f"[{timestamp}] {msg}")
+
+
+# ── 主程式 ───────────────────────────────────────────────────────────────────
+
+def main():
+    init_session_state()
+
+    st.markdown("""
+<div style="
+    position: fixed;
+    top: 0; left: 0; right: 0;
+    height: 3.75rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999999;
+    pointer-events: none;
+">
+    <span style="
+        color: #f8fafc;
+        font-size: 1.05rem;
+        font-weight: 700;
+        letter-spacing: 0.01em;
+        text-shadow: 0 1px 3px rgba(0,0,0,0.5);
+    ">🛒 AegisMart AI — 店長控制台</span>
+</div>
+""", unsafe_allow_html=True)
+
+    # Sidebar
+    with st.sidebar:
+        st.markdown("### ⚙️ 系統設定")
+        sim_mode = st.toggle("🎭 模擬模式（無需影片）", value=st.session_state.sim_mode)
+        st.session_state.sim_mode = sim_mode
+
+        if not sim_mode:
+            video_source = st.text_input(
+                "影片來源",
+                value=st.session_state.video_path or "sample.mp4",
+            )
+            st.session_state.video_path = video_source
+            confidence = st.slider("偵測信心閾值", 0.2, 0.8, 0.4, 0.05)
+            st.session_state.detector.confidence = confidence
+        else:
+            st.markdown("#### 🕐 時段設定")
+            tc1, tc2 = st.columns(2)
+            sim_hour_start = tc1.slider(
+                "起始", 6.0, 21.0,
+                value=st.session_state.sim_hour_start, step=0.5,
+                format="%.1f h"
+            )
+            sim_hour_end = tc2.slider(
+                "結束", 7.0, 24.0,
+                value=st.session_state.sim_hour_end, step=0.5,
+                format="%.1f h"
+            )
+            if sim_hour_end <= sim_hour_start:
+                sim_hour_end = sim_hour_start + 1.0
+            st.session_state.sim_hour_start = sim_hour_start
+            st.session_state.sim_hour_end = sim_hour_end
+
+            def _fmt_h(h):
+                return f"{int(h):02d}:{int((h % 1) * 60):02d}"
+            st.caption(f"營業時段 {_fmt_h(sim_hour_start)} – {_fmt_h(sim_hour_end)}")
+            c1, c2 = st.columns(2)
+            sim_peak = c1.number_input("尖峰人數", 20, 120, st.session_state.sim_peak, 5)
+            sim_base = c2.number_input("離峰人數", 3, 30, st.session_state.sim_base, 1)
+
+            st.markdown("#### 🏪 區域吸引力")
+            st.caption("數值越高，該區域分配到的人數越多")
+            names = ["生鮮區", "烘焙區", "乳品區", "熟食區"]
+            weights = []
+            for i, n in enumerate(names):
+                w = st.slider(n, 1, 10, st.session_state.sim_weights[i], key=f"w_{i}")
+                weights.append(w)
+
+            st.session_state.sim_peak = sim_peak
+            st.session_state.sim_base = sim_base
+            st.session_state.sim_weights = weights
+
+            if st.button("🔄 套用並重設模擬", use_container_width=True):
+                st.session_state.sim_hour = sim_hour_start
+                total_w = sum(weights)
+                mid = (sim_peak + sim_base) / 2
+                st.session_state.sim_zone_smooth = [mid * w / total_w for w in weights]
+                st.session_state.sim_zone_counts = [max(0, round(s)) for s in st.session_state.sim_zone_smooth]
+
+        st.divider()
+        st.markdown("### 🎛️ 監控控制")
+        if st.button("▶️ 啟動監控", use_container_width=True, type="primary",
+                     disabled=st.session_state.running):
+            st.session_state.running = True
+            st.session_state.sim_tick = 0
+            st.session_state.sim_hour = st.session_state.sim_hour_start
+            st.session_state.log = ["[System] AegisMart AI 已啟動，賣場視覺監控中..."]
+            st.session_state.current_decision = None
+            st.session_state.decision_created_at = 0.0
+            st.session_state.agent.reset_cooldowns()
+            # 波形模型初始化
+            weights = st.session_state.sim_weights
+            total_w = sum(weights)
+            mid = (st.session_state.sim_peak + st.session_state.sim_base) / 2
+            init_smooth = [mid * w / total_w for w in weights]
+            st.session_state.sim_zone_smooth = init_smooth
+            st.session_state.sim_zone_counts = [max(0, round(s)) for s in init_smooth]
+        if st.button("⏹️ 停止監控", use_container_width=True,
+                     disabled=not st.session_state.running):
+            st.session_state.running = False
+
+        st.divider()
+        st.markdown("### 📊 靈敏度調控")
+        min_pending = st.slider(
+            "方案最短停留（秒）", 10, 120,
+            value=st.session_state.get("min_pending_seconds", 30), step=5,
+            help="異常方案出現後，至少保留幾秒才允許自動解除"
+        )
+        st.session_state.min_pending_seconds = min_pending
+
+        cooldown = st.slider(
+            "核准後冷卻（秒）", 10, 180,
+            value=st.session_state.agent.cooldown_seconds, step=5,
+            help="核准方案後，同區域幾秒內不再重複觸發"
+        )
+        st.session_state.agent.cooldown_seconds = cooldown
+
+        drop_pct = st.slider(
+            "人流驟降門檻（%）", 20, 70,
+            value=int(st.session_state.agent.thresholds["drop_rate"] * 100), step=5,
+            help="人流跌至歷史均值的幾 % 以下才觸發 Agent"
+        )
+        st.session_state.agent.thresholds["drop_rate"] = drop_pct / 100
+
+        st.divider()
+        st.markdown("### 📋 審批記錄")
+        for item in st.session_state.approved[-5:]:
+            st.success(f"✅ {item}")
+
+    # 主要版面
+    col_video, col_panel = st.columns([3, 2])
+
+    with col_video:
+        st.markdown("### 📹 即時監控畫面")
+        if st.session_state.sim_mode:
+            sim_monitor_fragment()
+        else:
+            st.warning("影片模式請提供 sample.mp4")
+
+    with col_panel:
+        st.markdown("### 🤖 Agent 推演")
+        render_agent_panel()
+        st.markdown("### 📜 系統日誌")
+        render_log()
 
 
 if __name__ == "__main__":

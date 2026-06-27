@@ -7,6 +7,7 @@ import numpy as np
 from ultralytics import YOLO
 from dataclasses import dataclass, field
 from collections import deque
+from pathlib import Path
 import time
 
 
@@ -143,12 +144,13 @@ class PeopleDetector:
 
 def create_default_detector() -> PeopleDetector:
     """建立預設偵測器，含賣場常見區域劃分"""
-    detector = PeopleDetector(model_size="yolov8n.pt", confidence=0.4)
+    model_path = str(Path(__file__).parent / "yolov8n.pt")
+    detector = PeopleDetector(model_size=model_path, confidence=0.4)
 
     # 預設區域（可依實際影片調整）
     detector.add_zone("生鮮區", (0.0, 0.0, 0.5, 0.5))
-    detector.add_zone("零食區", (0.5, 0.0, 1.0, 0.5))
-    detector.add_zone("飲料區", (0.0, 0.5, 0.5, 1.0))
-    detector.add_zone("結帳區", (0.5, 0.5, 1.0, 1.0))
+    detector.add_zone("烘焙區", (0.5, 0.0, 1.0, 0.5))
+    detector.add_zone("乳品區", (0.0, 0.5, 0.5, 1.0))
+    detector.add_zone("熟食區", (0.5, 0.5, 1.0, 1.0))
 
     return detector
