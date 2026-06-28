@@ -140,6 +140,8 @@ def sim_monitor_fragment():
 def _store_wave(hour: float, peak: int, base: int) -> int:
     """全場人流波形：早上小高峰(10)、午餐(12.5)、傍晚大高峰(18.5)"""
     def bump(h, center, width, height):
+        if abs(h - center) >= width:
+            return 0.0
         return height * max(0.0, math.cos(math.pi * (h - center) / width))
 
     level = (bump(hour, 10.0, 2.5, 0.55) +
@@ -156,6 +158,9 @@ def simulate_zone_counts(tick: int) -> tuple[list[dict], int]:
     peak    = st.session_state.sim_peak
     base    = st.session_state.sim_base
     weights = st.session_state.sim_weights
+
+    # 全場離峰門檻：低於 base × 1.5 時 Agent 不觸發區域方案
+    st.session_state.agent.min_store_total = int(base * 1.5)
 
     # Layer 1：全場總人數（波形 + 微小雜訊）
     store_total = _store_wave(hour, peak, base)
@@ -267,7 +272,13 @@ def render_agent_panel():
             st.error(f"🚨 **{decision.trigger_reason}**")
         else:
             st.warning(f"⚠️ **{decision.trigger_reason}**")
-        st.markdown(f"*觸發時間：{decision.timestamp}*")
+
+        col_ts, col_skip = st.columns([3, 1])
+        col_ts.markdown(f"*觸發時間：{decision.timestamp}*")
+        if col_skip.button("略過 ✕", key=f"skip_{decision.zone_name}_{decision.timestamp}",
+                           use_container_width=True):
+            skip_decision(decision)
+            st.rerun()
 
         for i, promo in enumerate(decision.promotions):
             col_info, col_btn = st.columns([4, 1])
@@ -283,6 +294,14 @@ def render_agent_panel():
                     st.rerun()
 
         st.markdown("---")
+
+
+def skip_decision(decision):
+    add_log(f"[Human-in-the-Loop] ⏭️ 店長略過 {decision.zone_name} 方案，本次不採取行動")
+    st.session_state.current_decisions = [
+        d for d in st.session_state.current_decisions
+        if not (d.zone_name == decision.zone_name and d.timestamp == decision.timestamp)
+    ]
 
 
 def approve_promotion(promo, decision):
@@ -392,8 +411,8 @@ def main():
             if st.button("🔄 套用並重設模擬", use_container_width=True):
                 st.session_state.sim_hour = sim_hour_start
                 total_w = sum(weights)
-                mid = (sim_peak + sim_base) / 2
-                st.session_state.sim_zone_smooth = [mid * w / total_w for w in weights]
+                init_total = _store_wave(sim_hour_start, sim_peak, sim_base)
+                st.session_state.sim_zone_smooth = [init_total * w / total_w for w in weights]
                 st.session_state.sim_zone_counts = [max(0, round(s)) for s in st.session_state.sim_zone_smooth]
 
         st.divider()
@@ -406,11 +425,13 @@ def main():
             st.session_state.log = ["[System] AegisMart AI 已啟動，賣場視覺監控中..."]
             st.session_state.current_decisions = []
             st.session_state.agent.reset_cooldowns()
-            # 波形模型初始化
+            # 波形模型初始化：依起始時段的實際波形值設定，避免從 mid 起跳
             weights = st.session_state.sim_weights
             total_w = sum(weights)
-            mid = (st.session_state.sim_peak + st.session_state.sim_base) / 2
-            init_smooth = [mid * w / total_w for w in weights]
+            init_total = _store_wave(st.session_state.sim_hour_start,
+                                     st.session_state.sim_peak,
+                                     st.session_state.sim_base)
+            init_smooth = [init_total * w / total_w for w in weights]
             st.session_state.sim_zone_smooth = init_smooth
             st.session_state.sim_zone_counts = [max(0, round(s)) for s in init_smooth]
         if st.button("⏹️ 停止監控", use_container_width=True,
@@ -434,11 +455,18 @@ def main():
         st.session_state.agent.cooldown_seconds = cooldown
 
         drop_pct = st.slider(
-            "人流驟降門檻（%）", 20, 70,
+            "人流驟降門檻（%）", 10, 60,
             value=int(st.session_state.agent.thresholds["drop_rate"] * 100), step=5,
-            help="人流跌至歷史均值的幾 % 以下才觸發 Agent"
+            help="人流跌至均值的幾 % 以下才觸發驟降方案"
         )
         st.session_state.agent.thresholds["drop_rate"] = drop_pct / 100
+
+        high_mult = st.slider(
+            "人流爆滿門檻（倍）", 1.2, 3.0,
+            value=float(st.session_state.agent.thresholds["high_multiplier"]), step=0.1,
+            help="人流超過均值幾倍才觸發爆滿方案（預設 1.8×）"
+        )
+        st.session_state.agent.thresholds["high_multiplier"] = high_mult
 
         st.divider()
         st.markdown("### 📋 審批記錄")

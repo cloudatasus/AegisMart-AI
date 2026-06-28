@@ -33,11 +33,11 @@ class MartAgent:
     def __init__(self):
         self.history = []
         self.thresholds = {
-            "low_traffic": 2,       # 人數低於此值觸發（≤2 人）
-            "high_traffic": 15,     # 人數高於此值觸發
-            "drop_rate": 0.35,      # 人流下降 65% 才觸發
+            "drop_rate": 0.35,       # 人流跌至均值的 35% 以下觸發驟降
+            "high_multiplier": 1.8,  # 人流超過均值 1.8 倍觸發爆滿
         }
         self.cooldown_seconds = 30  # 同區域核准後冷卻秒數（可由外部調整）
+        self.min_store_total = 0    # 全場低於此值時不觸發任何方案（由 app.py 依 base 設定）
         self.cooldown = {}  # 各區域冷卻時間
 
     def clear_cooldown(self, zone_name: str):
@@ -59,6 +59,11 @@ class MartAgent:
         debug_msgs = []
         decisions = []
 
+        # 全場人數過低時屬正常離峰，不觸發區域方案
+        if self.min_store_total > 0 and total_count < self.min_store_total:
+            debug_msgs.append(f"[Agent] 全場 {total_count} 人 < 門檻 {self.min_store_total}，離峰不觸發")
+            return [], debug_msgs
+
         for zone in zone_stats:
             name = zone["name"]
             count = zone["count"]
@@ -73,9 +78,9 @@ class MartAgent:
             decision = None
             if count == 0 and avg >= 2:
                 decision = self._generate_dead_zone_plan(name)
-            elif avg > 3 and count <= self.thresholds["low_traffic"] and count <= avg * self.thresholds["drop_rate"]:
+            elif avg > 3 and count <= avg * self.thresholds["drop_rate"]:
                 decision = self._generate_low_traffic_plan(name, count, avg)
-            elif count >= self.thresholds["high_traffic"]:
+            elif avg > 0 and count >= avg * self.thresholds["high_multiplier"]:
                 decision = self._generate_peak_plan(name, count)
 
             if decision:
@@ -116,18 +121,18 @@ class MartAgent:
                     expected_effect=promo1_effect
                 ),
                 Promotion(
-                    name="買一送一",
-                    description=f"{zone}看板「買一送一倒數中」，搭配聲音提示吸引注意",
-                    discount="買一送一",
-                    risk_level="激進",
-                    expected_effect="消化率 92%，毛利較低但報廢歸零"
+                    name="3件 85折組合",
+                    description=f"{zone}看板「任選 3 件 85折」，鼓勵加購而非單件折扣",
+                    discount="3件85折",
+                    risk_level="低風險",
+                    expected_effect="客單量 +2.3件，毛利損失低於 B1G1 的 40%"
                 ),
                 Promotion(
-                    name="$99 驚喜福袋",
-                    description="看板推「$99 隨機 3 樣福袋」，製造趣味性與社群分享動機",
-                    discount="組合價",
-                    risk_level="創新",
-                    expected_effect="社群分享率 +40%，吸引年輕客群"
+                    name="試吃導客",
+                    description=f"在 {zone} 入口設置試吃站，增加顧客停留與體驗",
+                    discount="無折扣",
+                    risk_level="推薦",
+                    expected_effect="停留時間 +3 分鐘，連帶購買率 +30%"
                 ),
             ]
         )
